@@ -85,7 +85,7 @@ export default function ConfirmacionMovimiento({
         <Input etiqueta="Gaveta" value={lectura.gaveta} onChange={(e) => onCambiar({ gaveta: e.target.value })} />
       </fieldset>
 
-      {/* El documento se conserva entre lecturas: normalmente se reciben varios productos de la misma orden */}
+      {/* El documento se conserva entre lecturas del mismo modo: normalmente se reciben varios productos de la misma orden */}
       <Input
         etiqueta="Documento (opcional)"
         placeholder="OC-1234, RMA-56, remisión…"

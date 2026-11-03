@@ -42,7 +42,7 @@ export default function EscanerPage() {
   const [lectura, setLectura] = useState(null)
   const [errorLectura, setErrorLectura] = useState(null)
   const [buscando, setBuscando] = useState(false)
-  const [documento, setDocumento] = useState('') // se conserva entre lecturas
+  const [documento, setDocumento] = useState('') // se conserva entre lecturas del mismo modo
   const [confirmando, setConfirmando] = useState(false)
   const [errorMovimiento, setErrorMovimiento] = useState(null)
   const [ultimoMovimiento, setUltimoMovimiento] = useState(null) // texto del último movimiento registrado
@@ -130,9 +130,11 @@ export default function EscanerPage() {
     }
   }
 
-  // Cambiar de modo descarta la lectura, porque una entrada a medias no debe convertirse en salida
+  // Cambiar de modo descarta la lectura y el documento: una entrada a medias no debe convertirse en salida,
+  // y la orden de compra de una recepción no corresponde a un despacho
   function cambiarModo(clave) {
     setParametros({ modo: clave }, { replace: true })
+    setDocumento('')
     descartar()
   }
 
