@@ -3,6 +3,8 @@
  * Maneja las peticiones HTTP, validaciones con Zod y respuestas JSON.
  */
 const productsService = require('./products.service');
+const productsGenerators = require('./products.generators');
+const productsExcel = require('./products.excel');
 const {
   createProductSchema,
   updateProductSchema,
@@ -198,6 +200,130 @@ class ProductsController {
       return res.status(statusCode).json({
         ok: false,
         error: error.message || 'Ocurrió un error al archivar el producto.'
+      });
+    }
+  }
+
+  // Genera SKU automatico con prefijo opcional
+  async generateSku(req, res) {
+    try {
+      const businessId = req.user.business_id;
+      const prefix = req.query.prefix || 'SKU';
+      const sku = await productsGenerators.generateSku(businessId, prefix);
+
+      return res.status(200).json({
+        ok: true,
+        sku
+      });
+    } catch (error) {
+      return res.status(500).json({
+        ok: false,
+        error: error.message || 'Error al generar SKU'
+      });
+    }
+  }
+
+  // Genera codigo de barras valido EAN-13 o CODE-128
+  async generateBarcode(req, res) {
+    try {
+      const type = req.query.type || 'ean13';
+      let barcode = '';
+
+      if (type === 'code128') {
+        barcode = productsGenerators.generateCode128(req.query.sku);
+      } else {
+        barcode = productsGenerators.generateEan13(req.query.prefix || '750');
+      }
+
+      return res.status(200).json({
+        ok: true,
+        type,
+        barcode
+      });
+    } catch (error) {
+      return res.status(500).json({
+        ok: false,
+        error: error.message || 'Error al generar codigo de barras'
+      });
+    }
+  }
+
+  // Genera payload y comando ZPL para etiquetas termicas Zebra
+  async generateLabel(req, res) {
+    try {
+      const productId = parseInt(req.params.id, 10);
+      const businessId = req.user.business_id;
+      const product = await productsService.getById(businessId, productId, false);
+
+      if (!product) {
+        return res.status(404).json({
+          ok: false,
+          error: 'Producto no encontrado'
+        });
+      }
+
+      const label = productsGenerators.generateZebraLabel(product);
+      return res.status(200).json({
+        ok: true,
+        label
+      });
+    } catch (error) {
+      return res.status(500).json({
+        ok: false,
+        error: error.message || 'Error al generar etiqueta'
+      });
+    }
+  }
+
+  // Importacion masiva de productos mediante archivo CSV o texto
+  async importMassive(req, res) {
+    try {
+      const businessId = req.user.business_id;
+      const dryRun = req.query.dryRun === 'true';
+
+      let csvContent = '';
+      if (req.file) {
+        const fs = require('fs');
+        csvContent = fs.readFileSync(req.file.path, 'utf-8');
+      } else if (req.body && req.body.csv) {
+        csvContent = req.body.csv;
+      } else {
+        return res.status(400).json({
+          ok: false,
+          error: 'Debes enviar un archivo CSV en el campo file o el contenido en el campo csv'
+        });
+      }
+
+      const result = await productsExcel.importMassive(businessId, csvContent, dryRun);
+      const statusCode = result.success ? 200 : 400;
+
+      return res.status(statusCode).json({
+        ok: result.success,
+        ...result
+      });
+    } catch (error) {
+      return res.status(500).json({
+        ok: false,
+        error: error.message || 'Error durante la importacion masiva'
+      });
+    }
+  }
+
+  // Exportacion de catalogo filtrado a CSV con proteccion de costos
+  async exportFiltered(req, res) {
+    try {
+      const businessId = req.user.business_id;
+      const canReadCosts = req.user.permissions?.includes('costs.read') || false;
+
+      const csvData = await productsExcel.exportFiltered(businessId, req.query, canReadCosts);
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="productos.csv"');
+      return res.status(200).send(csvData);
+    } catch (error) {
+      return res.status(500).json({
+        ok: false,
+        error: error.message || 'Error al exportar productos'
       });
     }
   }

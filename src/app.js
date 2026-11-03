@@ -9,6 +9,7 @@ const path = require('path');
 // Módulos de la API
 const productsRoutes = require('./modules/products/products.routes');
 const categoriesRoutes = require('./modules/categories/categories.routes');
+const inventoryRoutes = require('./modules/inventory/inventory.routes');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
 // Montaje de rutas modulares bajo el prefijo /api
 app.use('/api/products', productsRoutes);
 app.use('/api/categories', categoriesRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // Ruta de comprobación de salud del servidor
 app.get('/api/health', (req, res) => {
