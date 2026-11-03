@@ -1,4 +1,4 @@
-/* Estilos compartidos por Input y Select */
+/* Estilos compartidos por Input, Select y Textarea */
 .campo {
   display: flex;
   flex-direction: column;
@@ -18,6 +18,16 @@
   background: var(--color-superficie);
   color: inherit;
   font: inherit;
+}
+
+textarea.campo-control {
+  padding: 0.5rem 0.75rem;
+  resize: vertical;
+}
+
+.campo-control:disabled {
+  background: var(--color-fondo);
+  color: var(--color-texto-suave);
 }
 
 .campo-control[aria-invalid='true'] {

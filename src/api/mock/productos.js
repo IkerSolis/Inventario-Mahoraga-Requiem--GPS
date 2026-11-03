@@ -33,6 +33,7 @@ const productos = Array.from({ length: 48 }, (_, i) => {
     id: i + 1,
     sku: `MOD-${String(1000 + i * 7)}`,
     nombre: i < base.length ? b.nombre : `${b.nombre} ${Math.floor(i / base.length) + 1}`,
+    descripcion: '',
     categoria: b.categoria,
     marca: b.marca,
     unidad: b.unidad,
@@ -41,7 +42,9 @@ const productos = Array.from({ length: 48 }, (_, i) => {
     existencias,
     stockMinimo: STOCK_MINIMO,
     estadoStock: calcularEstadoStock(existencias, STOCK_MINIMO),
-    ubicacion: { pasillo: (i % 4) + 1, rack: 'ABCD'[i % 4], gaveta: (i % 6) + 1 },
+    pasillo: String((i % 4) + 1),
+    rack: 'ABCD'[i % 4],
+    gaveta: String((i % 6) + 1),
   }
 })
 
@@ -54,7 +57,7 @@ function quitarCostoSiNoPuede(producto) {
 
 // Minúsculas y sin acentos, para que "cinturon" encuentre "Cinturón"
 function normalizar(texto) {
-  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 }
 
 // Los filtros vacíos ('' o undefined) no filtran nada
@@ -72,6 +75,49 @@ export function listarProductos({ pagina = 1, porPagina = 25, busqueda, categori
     elementos: filtrados.slice(inicio, inicio + porPagina).map(quitarCostoSiNoPuede),
     total: filtrados.length,
   })
+}
+
+export async function obtenerProducto(id) {
+  const producto = productos.find((p) => p.id === id)
+  if (!producto) throw new Error('El producto no existe')
+  return esperar(quitarCostoSiNoPuede(producto))
+}
+
+// Igual que el servidor: los campos sin permiso se ignoran aunque vengan en la petición
+function quitarCamposSinPermiso(datos) {
+  const permitidos = { ...datos }
+  if (!tienePermiso('costs.read')) delete permitidos.precioCompra
+  if (!tienePermiso('prices.manage')) delete permitidos.precioVenta
+  return permitidos
+}
+
+function exigirPermiso(permiso) {
+  if (!tienePermiso(permiso)) throw new Error(`No tienes permiso (${permiso})`)
+}
+
+export async function crearProducto(datos) {
+  exigirPermiso('products.create')
+  const nuevo = {
+    precioVenta: 0, // si quien crea no gestiona precios, queda en 0 hasta que alguien con prices.manage lo asigne
+    precioCompra: 0,
+    ...quitarCamposSinPermiso(datos),
+    id: Math.max(...productos.map((p) => p.id)) + 1,
+    sku: `MOD-${String(2000 + productos.length)}`, // el backend genera el SKU
+    existencias: 0, // las existencias solo cambian con movimientos de inventario
+  }
+  nuevo.estadoStock = calcularEstadoStock(nuevo.existencias, nuevo.stockMinimo)
+  productos.unshift(nuevo) // al inicio, para que se vea en la primera página
+  return esperar(quitarCostoSiNoPuede(nuevo))
+}
+
+export async function actualizarProducto(id, datos) {
+  exigirPermiso('products.update')
+  const producto = productos.find((p) => p.id === id)
+  if (!producto) throw new Error('El producto no existe')
+
+  Object.assign(producto, quitarCamposSinPermiso(datos))
+  producto.estadoStock = calcularEstadoStock(producto.existencias, producto.stockMinimo)
+  return esperar(quitarCostoSiNoPuede(producto))
 }
 
 export function listarCategorias() {

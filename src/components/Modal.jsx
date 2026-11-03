@@ -4,7 +4,8 @@ import './Modal.css'
 
 // Usa el <dialog> nativo: Esc cierra y el foco queda dentro del modal sin código extra.
 // acciones: botones del pie (por ejemplo Cancelar / Guardar)
-export default function Modal({ abierto, onCerrar, titulo, acciones, children }) {
+// amplio: más ancho, para formularios con varias columnas
+export default function Modal({ abierto, onCerrar, titulo, acciones, amplio = false, children }) {
   const referencia = useRef(null)
   const idTitulo = useId()
 
@@ -16,7 +17,12 @@ export default function Modal({ abierto, onCerrar, titulo, acciones, children })
 
   // onClose se dispara al cerrar con Esc o con dialogo.close()
   return (
-    <dialog ref={referencia} className="modal" aria-labelledby={idTitulo} onClose={onCerrar}>
+    <dialog
+      ref={referencia}
+      className={`modal ${amplio ? 'modal-amplio' : ''}`}
+      aria-labelledby={idTitulo}
+      onClose={onCerrar}
+    >
       {/* El contenido se monta solo al abrir, así un formulario empieza limpio cada vez */}
       {abierto && (
         <>

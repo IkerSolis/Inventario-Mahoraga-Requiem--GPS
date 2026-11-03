@@ -7,6 +7,7 @@ import Input from '../../components/Input.jsx'
 import Paginacion from '../../components/Paginacion.jsx'
 import Select from '../../components/Select.jsx'
 import Tabla from '../../components/Tabla.jsx'
+import ProductoModal from './ProductoModal.jsx'
 import './ProductosPage.css'
 
 const ESTADOS_STOCK = {
@@ -25,6 +26,11 @@ export default function ProductosPage() {
   const [datos, setDatos] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
+
+  // edicion: null = modal cerrado; { idProducto: null } = crear; { idProducto } = editar
+  const [edicion, setEdicion] = useState(null)
+  const [aviso, setAviso] = useState(null)
+  const [recargas, setRecargas] = useState(0)
 
   // Filtros. "texto" es lo que se escribe; "busqueda" es lo que se manda, 300 ms después de dejar de escribir
   const [texto, setTexto] = useState('')
@@ -88,7 +94,18 @@ export default function ProductosPage() {
     return () => {
       vigente = false
     }
-  }, [pagina, porPagina, busqueda, categoria, estadoStock])
+  }, [pagina, porPagina, busqueda, categoria, estadoStock, recargas])
+
+  function abrirFormulario(idProducto) {
+    setAviso(null)
+    setEdicion({ idProducto })
+  }
+
+  function alGuardar(mensaje) {
+    setEdicion(null)
+    setAviso(mensaje)
+    setRecargas((n) => n + 1) // vuelve a pedir la lista para ver el cambio
+  }
 
   const columnas = [
     {
@@ -105,7 +122,7 @@ export default function ProductosPage() {
     {
       clave: 'ubicacion',
       titulo: 'Ubicación',
-      render: (p) => `Pasillo ${p.ubicacion.pasillo} · Rack ${p.ubicacion.rack} · Gaveta ${p.ubicacion.gaveta}`,
+      render: (p) => `Pasillo ${p.pasillo} · Rack ${p.rack} · Gaveta ${p.gaveta}`,
     },
     { clave: 'existencias', titulo: 'Existencias', alinear: 'derecha' },
     {
@@ -127,7 +144,15 @@ export default function ProductosPage() {
       clave: 'precioVenta',
       titulo: 'Precio',
       alinear: 'derecha',
-      render: (p) => formatoDinero.format(p.precioVenta),
+      // Precio 0 = lo creó alguien sin prices.manage y falta asignarlo
+      render: (p) => (p.precioVenta === 0 ? <Badge tono="alerta">Sin precio</Badge> : formatoDinero.format(p.precioVenta)),
+    },
+    puede('products.update') && {
+      clave: 'acciones',
+      titulo: 'Acciones',
+      render: (p) => (
+        <Boton variante="secundario" icono="edit" aria-label={`Editar ${p.nombre}`} onClick={() => abrirFormulario(p.id)} />
+      ),
     },
   ].filter(Boolean)
 
@@ -142,15 +167,22 @@ export default function ProductosPage() {
             </p>
           )}
         </div>
-        <Boton
-          variante="secundario"
-          icono={compacta ? 'density_medium' : 'density_small'}
-          aria-pressed={compacta}
-          onClick={() => setCompacta(!compacta)}
-        >
-          {compacta ? 'Vista normal' : 'Vista compacta'}
-        </Boton>
+        <div className="productos-acciones">
+          <Boton
+            variante="secundario"
+            icono={compacta ? 'density_medium' : 'density_small'}
+            aria-pressed={compacta}
+            onClick={() => setCompacta(!compacta)}
+          >
+            {compacta ? 'Vista normal' : 'Vista compacta'}
+          </Boton>
+          {puede('products.create') && (
+            <Boton icono="add" onClick={() => abrirFormulario(null)}>Nuevo producto</Boton>
+          )}
+        </div>
       </header>
+
+      {aviso && <p role="status" className="productos-aviso">{aviso}</p>}
 
       <div className="productos-filtros">
         <div className="productos-filtros-fila">
@@ -238,6 +270,15 @@ export default function ProductosPage() {
             }}
           />
         </div>
+      )}
+
+      {edicion && (
+        <ProductoModal
+          idProducto={edicion.idProducto}
+          categorias={categorias}
+          onCerrar={() => setEdicion(null)}
+          onGuardado={alGuardar}
+        />
       )}
     </section>
   )

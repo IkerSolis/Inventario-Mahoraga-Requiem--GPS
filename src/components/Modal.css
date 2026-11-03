@@ -7,6 +7,22 @@
   box-shadow: 0 20px 40px rgb(15 23 42 / 0.2);
 }
 
+/* Solo el cuerpo se desplaza; el título y los botones quedan siempre a la vista.
+   Va con [open] porque si no, el diálogo cerrado también se mostraría. */
+.modal[open] {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 2rem);
+}
+
+.modal-cuerpo {
+  overflow-y: auto;
+}
+
+.modal-amplio {
+  width: min(48rem, calc(100vw - 2rem));
+}
+
 .modal::backdrop {
   background: rgb(15 23 42 / 0.45);
 }

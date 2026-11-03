@@ -3,9 +3,9 @@ import * as mock from './mock/productos.js'
 
 // Contrato provisional (falta confirmarlo con Backend 2):
 // GET /api/productos?pagina=1&porPagina=25&busqueda=&categoria=&estadoStock= → { elementos: [producto, ...], total }
-// producto: { id, sku, nombre, categoria, marca, unidad, precioCompra, precioVenta,
+// producto: { id, sku, nombre, descripcion, categoria, marca, unidad, precioCompra, precioVenta,
 //             existencias, stockMinimo, estadoStock: 'disponible' | 'bajo' | 'agotado',
-//             ubicacion: { pasillo, rack, gaveta } }
+//             pasillo, rack, gaveta }
 // Sin el permiso costs.read el servidor no debería mandar precioCompra.
 // busqueda compara contra nombre y SKU; los filtros vacíos no se mandan.
 export function listarProductos({ pagina, porPagina, busqueda, categoria, estadoStock }) {
@@ -16,6 +16,24 @@ export function listarProductos({ pagina, porPagina, busqueda, categoria, estado
   if (categoria) parametros.set('categoria', categoria)
   if (estadoStock) parametros.set('estadoStock', estadoStock)
   return pedir(`/productos?${parametros}`)
+}
+
+// GET /api/productos/:id → producto completo (con descripción). Sin costs.read, sin precioCompra.
+export function obtenerProducto(id) {
+  if (usarMock) return mock.obtenerProducto(id)
+  return pedir(`/productos/${id}`)
+}
+
+// POST /api/productos → producto creado. El servidor genera id y SKU; las existencias empiezan en 0.
+export function crearProducto(datos) {
+  if (usarMock) return mock.crearProducto(datos)
+  return pedir('/productos', { method: 'POST', body: JSON.stringify(datos) })
+}
+
+// PATCH /api/productos/:id → producto actualizado. PATCH porque solo mandamos los campos que el usuario puede tocar.
+export function actualizarProducto(id, datos) {
+  if (usarMock) return mock.actualizarProducto(id, datos)
+  return pedir(`/productos/${id}`, { method: 'PATCH', body: JSON.stringify(datos) })
 }
 
 // GET /api/categorias → ['Accesorios', 'Calzado', ...] (provisional; el catálogo de categorías es de Frontend 3)
