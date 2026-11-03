@@ -53,3 +53,62 @@ export function esMismoProducto(codigo, producto) {
   const limpio = codigo.trim().toUpperCase()
   return limpio === producto.codigoBarras || limpio === producto.sku.toUpperCase()
 }
+
+// Botones de suma rápida de la confirmación
+export const PASOS_RAPIDOS = [1, 5, 10, 25, 50, 100]
+
+// La cantidad viaja como texto (es lo que da el <input>); vacío o inválido cuenta como 0
+export function sumarCantidad(texto, paso) {
+  const actual = Number(texto) || 0
+  return String(Math.max(0, actual + paso))
+}
+
+// Cuántas habrá después del movimiento. En el conteo, lo contado pasa a ser el total.
+export function totalNuevo(tipo, existencias, cantidad) {
+  if (tipo === 'entrada') return existencias + cantidad
+  if (tipo === 'salida') return existencias - cantidad
+  return cantidad
+}
+
+// Validación en el cliente, para avisar antes de enviar. El servidor vuelve a validar.
+// Devuelve el mensaje de error, o null si se puede confirmar.
+export function validarCantidad(tipo, texto, existencias) {
+  const cantidad = Number(texto)
+  if (texto.trim() === '' || !Number.isInteger(cantidad)) return 'Escribe una cantidad entera'
+  if (tipo === 'conteo') return cantidad < 0 ? 'La cantidad contada no puede ser negativa' : null
+  if (cantidad < 1) return 'La cantidad debe ser al menos 1'
+  if (tipo === 'salida' && cantidad > existencias) return `Solo hay ${existencias} en stock`
+  return null
+}
+
+// Clave de idempotencia: una por lectura. Si se reintenta la misma confirmación, el servidor no la duplica.
+// crypto.randomUUID solo existe en páginas seguras (https o localhost); si no, se arma una clave aleatoria.
+export function nuevaClave() {
+  if (globalThis.crypto?.randomUUID) return crypto.randomUUID()
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+// Cómo se muestra la cantidad: +10 en entradas, −4 en salidas (signo menos tipográfico), 12 en conteos
+export function textoCantidad(tipo, cantidad) {
+  if (tipo === 'entrada') return `+${cantidad}`
+  if (tipo === 'salida') return `−${cantidad}`
+  return String(cantidad)
+}
+
+// Diferencia con signo para conteos: +2, −3 o 0
+export function textoDiferencia(diferencia) {
+  if (diferencia > 0) return `+${diferencia}`
+  if (diferencia < 0) return `−${Math.abs(diferencia)}`
+  return '0'
+}
+
+// Mensaje después de confirmar. movimiento es la respuesta del servidor.
+export function resumenMovimiento(movimiento, nombreProducto) {
+  const { tipo, cantidad, existenciasAntes, existenciasDespues, diferencia } = movimiento
+  if (tipo === 'conteo') {
+    const detalle = diferencia === 0 ? 'sin diferencia' : `diferencia ${textoDiferencia(diferencia)}`
+    return `Conteo registrado: ${nombreProducto}, ${cantidad} contadas (sistema ${existenciasAntes}, ${detalle}).`
+  }
+  const nombre = tipo === 'entrada' ? 'Entrada registrada' : 'Salida registrada'
+  return `${nombre}: ${nombreProducto} ${textoCantidad(tipo, cantidad)} (${existenciasAntes} → ${existenciasDespues}).`
+}

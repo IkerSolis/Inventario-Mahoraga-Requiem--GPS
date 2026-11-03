@@ -1,5 +1,18 @@
 import { describe, expect, test } from 'vitest'
-import { MODOS, elegirModo, esMismoProducto, modoPorTecla, modosPermitidos } from './escanerLogica.js'
+import {
+  MODOS,
+  elegirModo,
+  esMismoProducto,
+  modoPorTecla,
+  modosPermitidos,
+  nuevaClave,
+  resumenMovimiento,
+  sumarCantidad,
+  textoCantidad,
+  textoDiferencia,
+  totalNuevo,
+  validarCantidad,
+} from './escanerLogica.js'
 
 // Simula usePuede() con una lista fija de permisos
 const conPermisos = (lista) => (permiso) => lista.includes(permiso)
@@ -38,5 +51,54 @@ describe('esMismoProducto', () => {
   test('otro código o sin producto en pantalla no es el mismo', () => {
     expect(esMismoProducto('7500000000022', producto)).toBe(false)
     expect(esMismoProducto('7500000000015', null)).toBe(false)
+  })
+})
+
+describe('confirmación de movimientos', () => {
+  test('sumarCantidad suma pasos y nunca baja de 0', () => {
+    expect(sumarCantidad('10', 25)).toBe('35')
+    expect(sumarCantidad('', 1)).toBe('1')
+    expect(sumarCantidad('2', -5)).toBe('0')
+  })
+
+  test('totalNuevo según el tipo de movimiento', () => {
+    expect(totalNuevo('entrada', 12, 10)).toBe(22)
+    expect(totalNuevo('salida', 12, 10)).toBe(2)
+    expect(totalNuevo('conteo', 12, 9)).toBe(9)
+  })
+
+  test('validarCantidad', () => {
+    expect(validarCantidad('entrada', '10', 0)).toBeNull()
+    expect(validarCantidad('entrada', '0', 5)).toBe('La cantidad debe ser al menos 1')
+    expect(validarCantidad('entrada', '', 5)).toBe('Escribe una cantidad entera')
+    expect(validarCantidad('entrada', '2.5', 5)).toBe('Escribe una cantidad entera')
+    expect(validarCantidad('salida', '6', 5)).toBe('Solo hay 5 en stock')
+    expect(validarCantidad('salida', '5', 5)).toBeNull()
+    expect(validarCantidad('conteo', '0', 5)).toBeNull()
+    expect(validarCantidad('conteo', '-1', 5)).toBe('La cantidad contada no puede ser negativa')
+  })
+
+  test('nuevaClave da claves distintas', () => {
+    expect(nuevaClave()).not.toBe(nuevaClave())
+  })
+})
+
+describe('textos de movimientos', () => {
+  test('textoCantidad y textoDiferencia', () => {
+    expect(textoCantidad('entrada', 10)).toBe('+10')
+    expect(textoCantidad('salida', 4)).toBe('−4')
+    expect(textoCantidad('conteo', 12)).toBe('12')
+    expect(textoDiferencia(2)).toBe('+2')
+    expect(textoDiferencia(-3)).toBe('−3')
+    expect(textoDiferencia(0)).toBe('0')
+  })
+
+  test('resumenMovimiento', () => {
+    const entrada = { tipo: 'entrada', cantidad: 10, existenciasAntes: 17, existenciasDespues: 27 }
+    expect(resumenMovimiento(entrada, 'Jeans')).toBe('Entrada registrada: Jeans +10 (17 → 27).')
+    const conteo = { tipo: 'conteo', cantidad: 15, existenciasAntes: 17, existenciasDespues: 17, diferencia: -2 }
+    expect(resumenMovimiento(conteo, 'Jeans')).toBe(
+      'Conteo registrado: Jeans, 15 contadas (sistema 17, diferencia −2).',
+    )
   })
 })
