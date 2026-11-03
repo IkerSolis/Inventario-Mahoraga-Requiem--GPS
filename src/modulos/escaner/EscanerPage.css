@@ -1,0 +1,115 @@
+.escaner-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+}
+
+.escaner-encabezado h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.escaner-encabezado p {
+  margin: 0.25rem 0 0;
+  color: var(--color-texto-suave);
+}
+
+.escaner-encabezado-icono {
+  padding: 0.75rem;
+  border-radius: var(--radio-control);
+  background: var(--color-primario-suave);
+  color: var(--color-primario);
+  font-size: 2rem;
+}
+
+.escaner-modos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.escaner-modo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.escaner-modo:hover {
+  border-color: var(--color-primario);
+}
+
+.escaner-modo[aria-pressed='true'] {
+  border-color: var(--color-primario);
+  background: var(--color-primario);
+  color: #fff;
+}
+
+.escaner-modo-icono {
+  padding: 0.5rem;
+  border-radius: var(--radio-control);
+  background: var(--color-primario-suave);
+  color: var(--color-primario);
+}
+
+.escaner-modo[aria-pressed='true'] .escaner-modo-icono {
+  background: rgb(255 255 255 / 0.2);
+  color: #fff;
+}
+
+.escaner-modo-texto {
+  display: grid;
+  flex: 1;
+  gap: 0.125rem;
+}
+
+.escaner-modo-texto span {
+  font-size: 0.8125rem;
+  opacity: 0.8;
+}
+
+.escaner-modo[aria-pressed='true'] kbd {
+  border-color: rgb(255 255 255 / 0.4);
+  background: rgb(255 255 255 / 0.15);
+  color: #fff;
+}
+
+/* Lector y lectura a la izquierda; el manifiesto de la sesión irá a la derecha */
+.escaner-cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.escaner-panel {
+  padding: 1.25rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+}
+
+.escaner-vacio {
+  margin: 0;
+  color: var(--color-texto-suave);
+}
+
+.escaner-sin-permiso {
+  max-width: 40rem;
+  padding: 1rem;
+  border-radius: var(--radio-control);
+  background: color-mix(in srgb, var(--color-alerta) 14%, white);
+  color: color-mix(in srgb, var(--color-alerta) 55%, black);
+}
