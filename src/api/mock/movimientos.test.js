@@ -64,10 +64,11 @@ describe('mock de movimientos', () => {
   })
 
   test('cada tipo exige su permiso y la cantidad debe ser válida', async () => {
-    await obtenerSesion('R4') // almacenista: puede contar, pero no recibir (opcional apagado)
+    await obtenerSesion('R6') // ventas: no mueve stock
     await expect(registrarMovimiento({ tipo: 'entrada', productoId: 1, cantidad: 1 }, 'k1')).rejects.toMatchObject({
       estado: 403,
     })
+    await obtenerSesion('R4') // almacenista: puede contar
     await expect(registrarMovimiento({ tipo: 'conteo', productoId: 1, cantidad: 2.5 }, 'k2')).rejects.toMatchObject({
       estado: 422,
     })
