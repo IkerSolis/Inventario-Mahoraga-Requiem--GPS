@@ -1,3 +1,5 @@
+import './productos.css' // estilos de .producto-imagen; así funciona también fuera de Productos (Escáner)
+
 // Imagen del producto, o un ícono gris si no tiene.
 // tamano: 'chica' (tabla), 'tarjeta' (ancho completo) o 'grande' (detalle y formulario)
 // alt: vacío cuando el nombre ya está escrito al lado, para que el lector de pantalla no lo repita

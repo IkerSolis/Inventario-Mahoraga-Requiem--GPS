@@ -1,8 +1,9 @@
 // Simula GET /api/me. La tabla sale de la matriz de permisos del plan de desarrollo.
-// Los permisos marcados como opcionales (*) en la matriz quedan APAGADOS aquí:
-//   R2 costs.read · R3 stock.adjust.approve, audit.read · R4 stock.receive, stock.issue, stock.transfer
+// Los permisos marcados como opcionales (*) en la matriz quedan APAGADOS aquí, salvo los indicados:
+//   R2 costs.read · R3 stock.adjust.approve, audit.read · R4 stock.transfer
 //   R5 stock.receive, costs.read · R6 stock.issue, stock.transfer, prices.manage · R7 audit.read
-// Para probar uno, agrégalo al arreglo del rol.
+// Encendidos para la demo del escáner: R4 stock.receive y stock.issue (ver el arreglo de R4).
+// Para probar uno, agrégalo al arreglo del rol; para apagarlo, quítalo.
 import { esperar } from './esperar.js'
 
 export const ROLES = [
@@ -89,6 +90,9 @@ export const PERMISOS_POR_ROL = {
     'products.read',
     'stock.read',
     'stock.count',
+    // Opcionales según el plan (O*); encendidos para que el almacenista use F1 y F2 en la demo
+    'stock.receive',
+    'stock.issue',
     'stock.adjust.request',
     'purchases.read',
     'sales.read',

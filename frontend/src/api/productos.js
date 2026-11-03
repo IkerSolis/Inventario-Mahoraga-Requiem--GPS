@@ -3,7 +3,8 @@ import * as mock from './mock/productos.js'
 
 // Contrato provisional (falta confirmarlo con Backend 2):
 // GET /api/productos?pagina=1&porPagina=25&busqueda=&categoria=&estadoStock= → { elementos: [producto, ...], total }
-// producto: { id, sku, nombre, descripcion, categoria, marca, unidad, precioCompra, precioVenta,
+// producto: { id, sku, codigoBarras (EAN-13, lo genera el servidor), nombre, descripcion, categoria, marca,
+//             unidad, precioCompra, precioVenta,
 //             existencias, stockMinimo, estadoStock: 'disponible' | 'bajo' | 'agotado',
 //             pasillo, rack, gaveta, archivado, imagen: URL o null }
 // Sin archivados=true el servidor solo manda productos activos; con archivados=true, solo los archivados.
@@ -24,6 +25,13 @@ export function listarProductos({ pagina, porPagina, busqueda, categoria, estado
 export function obtenerProducto(id) {
   if (usarMock) return mock.obtenerProducto(id)
   return pedir(`/productos/${id}`)
+}
+
+// GET /api/productos/codigo/:codigo → producto. Busca por código de barras o por SKU.
+// 404 si no existe; 409 si está archivado.
+export function buscarProductoPorCodigo(codigo) {
+  if (usarMock) return mock.buscarProductoPorCodigo(codigo)
+  return pedir(`/productos/codigo/${encodeURIComponent(codigo.trim())}`)
 }
 
 // POST /api/productos → producto creado. El servidor genera id y SKU; las existencias empiezan en 0.

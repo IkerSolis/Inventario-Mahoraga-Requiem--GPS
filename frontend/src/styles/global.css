@@ -32,6 +32,16 @@ kbd {
   font-size: 0.75rem;
 }
 
+/* Oculto a la vista pero disponible para lectores de pantalla y teclado (por ejemplo un input de archivo) */
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Contorno visible al navegar con teclado, igual para todos los controles */
 :focus-visible {
   outline: 2px solid var(--color-primario);

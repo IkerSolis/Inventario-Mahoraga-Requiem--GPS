@@ -72,3 +72,20 @@
   margin: 0;
   text-align: right;
 }
+
+.detalle-codigo {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Un clic selecciona el código completo, para copiarlo a mano si hace falta */
+.detalle-codigo .cifra {
+  user-select: all;
+}
+
+.detalle-codigo .boton {
+  min-height: 2rem;
+  padding: 0 0.5rem;
+}
