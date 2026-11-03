@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { erroresPorCampo, esquemaSegunPermisos, productoSchema } from './productoSchema.js'
+import { erroresPorCampo, esquemaSegunPermisos, productoSchema, validarImagen } from './productoSchema.js'
 
 // Así llegan los datos desde el formulario: todo como texto
 const formularioValido = {
@@ -56,5 +56,23 @@ describe('esquemaSegunPermisos', () => {
     expect(resultado.success).toBe(true)
     expect(resultado.data).not.toHaveProperty('precioCompra')
     expect(resultado.data).not.toHaveProperty('precioVenta')
+  })
+})
+
+describe('validarImagen', () => {
+  const MB = 1024 * 1024
+
+  test('acepta PNG y JPG de hasta 2 MB', () => {
+    expect(validarImagen({ type: 'image/png', size: 500 * 1024 })).toBeNull()
+    expect(validarImagen({ type: 'image/jpeg', size: 2 * MB })).toBeNull()
+  })
+
+  test('rechaza otros formatos', () => {
+    expect(validarImagen({ type: 'image/gif', size: 1000 })).toBe('Solo se aceptan imágenes PNG o JPG')
+    expect(validarImagen({ type: 'application/pdf', size: 1000 })).toBe('Solo se aceptan imágenes PNG o JPG')
+  })
+
+  test('rechaza imágenes de más de 2 MB', () => {
+    expect(validarImagen({ type: 'image/png', size: 2 * MB + 1 })).toBe('La imagen no puede pesar más de 2 MB')
   })
 })

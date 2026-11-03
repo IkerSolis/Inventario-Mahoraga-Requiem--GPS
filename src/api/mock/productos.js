@@ -46,6 +46,7 @@ const productos = Array.from({ length: 48 }, (_, i) => {
     rack: 'ABCD'[i % 4],
     gaveta: String((i % 6) + 1),
     archivado: false,
+    imagen: null,
   }
 })
 
@@ -108,6 +109,7 @@ export async function crearProducto(datos) {
     sku: `MOD-${String(2000 + productos.length)}`, // el backend genera el SKU
     existencias: 0, // las existencias solo cambian con movimientos de inventario
     archivado: false,
+    imagen: null,
   }
   nuevo.estadoStock = calcularEstadoStock(nuevo.existencias, nuevo.stockMinimo)
   productos.unshift(nuevo) // al inicio, para que se vea en la primera página
@@ -121,6 +123,30 @@ export async function actualizarProducto(id, datos) {
 
   Object.assign(producto, quitarCamposSinPermiso(datos))
   producto.estadoStock = calcularEstadoStock(producto.existencias, producto.stockMinimo)
+  return esperar(quitarCostoSiNoPuede(producto))
+}
+
+// El servidor real guardaría el archivo y devolvería su URL; en el mock basta guardarlo como data URL
+function leerComoDataUrl(archivo) {
+  return new Promise((resolver, rechazar) => {
+    const lector = new FileReader()
+    lector.onload = () => resolver(lector.result)
+    lector.onerror = () => rechazar(lector.error)
+    lector.readAsDataURL(archivo)
+  })
+}
+
+export async function subirImagenProducto(id, archivo) {
+  if (!tienePermiso('products.create') && !tienePermiso('products.update')) {
+    throw new Error('No tienes permiso (products.update)')
+  }
+  // El servidor valida por su cuenta, aunque el formulario ya lo haya hecho
+  if (!['image/png', 'image/jpeg'].includes(archivo.type)) throw new Error('Solo se aceptan imágenes PNG o JPG')
+  if (archivo.size > 2 * 1024 * 1024) throw new Error('La imagen pesa más de 2 MB')
+
+  const producto = productos.find((p) => p.id === id)
+  if (!producto) throw new Error('El producto no existe')
+  producto.imagen = await leerComoDataUrl(archivo)
   return esperar(quitarCostoSiNoPuede(producto))
 }
 

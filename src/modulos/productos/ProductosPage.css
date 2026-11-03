@@ -17,6 +17,17 @@
   gap: 0.5rem;
 }
 
+.productos-vista {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.producto-celda {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .productos-fila-acciones {
   display: flex;
   gap: 0.375rem;

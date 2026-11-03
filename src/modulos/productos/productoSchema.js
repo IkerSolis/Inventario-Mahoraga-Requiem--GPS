@@ -35,6 +35,17 @@ export function esquemaSegunPermisos({ puedeEditarCosto, puedeEditarPrecio }) {
   return esquema
 }
 
+export const TIPOS_IMAGEN = ['image/png', 'image/jpeg']
+export const TAMANO_MAXIMO_IMAGEN = 2 * 1024 * 1024 // 2 MB
+
+// La imagen es un archivo (File), no texto, así que se valida aparte del esquema.
+// Devuelve el mensaje de error, o null si la imagen es válida.
+export function validarImagen(archivo) {
+  if (!TIPOS_IMAGEN.includes(archivo.type)) return 'Solo se aceptan imágenes PNG o JPG'
+  if (archivo.size > TAMANO_MAXIMO_IMAGEN) return 'La imagen no puede pesar más de 2 MB'
+  return null
+}
+
 // Convierte los errores de Zod en { campo: 'mensaje' } (el primer error de cada campo)
 export function erroresPorCampo(error) {
   const errores = {}

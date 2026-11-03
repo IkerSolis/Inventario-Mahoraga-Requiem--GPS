@@ -9,7 +9,10 @@ import Paginacion from '../../components/Paginacion.jsx'
 import Select from '../../components/Select.jsx'
 import Tabla from '../../components/Tabla.jsx'
 import ArchivarProductoModal from './ArchivarProductoModal.jsx'
+import PrecioVenta from './PrecioVenta.jsx'
+import ProductoImagen from './ProductoImagen.jsx'
 import ProductoModal from './ProductoModal.jsx'
+import ProductoTarjetas from './ProductoTarjetas.jsx'
 import { ESTADOS_STOCK, formatoDinero } from './productoFormato.js'
 import './productos.css'
 import './ProductosPage.css'
@@ -17,7 +20,7 @@ import './ProductosPage.css'
 export default function ProductosPage() {
   const puede = usePuede()
 
-  // Búsqueda, filtros, página y "Ver archivados" viven en la URL (?q=...&categoria=...&pagina=2),
+  // Búsqueda, filtros, página, "Ver archivados" y la vista viven en la URL (?q=...&categoria=...&pagina=2),
   // así se conservan al volver del detalle y se pueden compartir como enlace.
   const [parametros, setParametros] = useSearchParams()
   const pagina = Number(parametros.get('pagina')) || 1
@@ -26,6 +29,7 @@ export default function ProductosPage() {
   const categoria = parametros.get('categoria') ?? ''
   const estadoStock = ESTADOS_STOCK[parametros.get('estado')] ? parametros.get('estado') : ''
   const verArchivados = parametros.get('archivados') === '1'
+  const vista = parametros.get('vista') === 'tarjetas' ? 'tarjetas' : 'lista'
 
   // Cambia varios parámetros de la URL a la vez. Los vacíos se quitan para que la URL quede limpia.
   // replace: true para no llenar el historial con cada filtro; "atrás" regresa a la página anterior.
@@ -123,11 +127,12 @@ export default function ProductosPage() {
     setEdicion({ idProducto })
   }
 
-  // Al terminar de guardar o archivar: cerrar modales, avisar y volver a pedir la lista para ver el cambio
-  function alTerminar(mensaje) {
+  // Al terminar de guardar o archivar: cerrar modales, avisar y volver a pedir la lista para ver el cambio.
+  // tipo 'alerta' cuando se guardó pero algo quedó pendiente (por ejemplo, la imagen no se subió).
+  function alTerminar(mensaje, tipo = 'exito') {
     setEdicion(null)
     setPorArchivar(null)
-    setAviso({ tipo: 'exito', texto: mensaje })
+    setAviso({ tipo, texto: mensaje })
     setRecargas((n) => n + 1)
   }
 
@@ -150,18 +155,52 @@ export default function ProductosPage() {
     ? puede('products.archive')
     : puede('products.update') || puede('products.archive')
 
+  // Botones de cada producto; los usan igual la tabla y las tarjetas
+  function renderAcciones(p) {
+    if (verArchivados) {
+      return (
+        <Boton variante="secundario" icono="unarchive" cargando={restaurando === p.id} onClick={() => restaurar(p)}>
+          Restaurar
+        </Boton>
+      )
+    }
+    return (
+      <>
+        {puede('products.update') && (
+          <Boton variante="secundario" icono="edit" aria-label={`Editar ${p.nombre}`} onClick={() => abrirFormulario(p.id)} />
+        )}
+        {puede('products.archive') && (
+          <Boton
+            variante="secundario"
+            icono="archive"
+            aria-label={`Archivar ${p.nombre}`}
+            onClick={() => {
+              setAviso(null)
+              setPorArchivar(p)
+            }}
+          />
+        )}
+      </>
+    )
+  }
+
+  // state: el detalle usa estos filtros para que "Volver al catálogo" regrese a la misma vista
+  const filtrosLista = parametros.toString()
+
   const columnas = [
     {
       clave: 'nombre',
       titulo: 'Producto',
       render: (p) => (
-        <>
-          {/* state: el detalle usa estos filtros para que "Volver al catálogo" regrese a la misma vista */}
-          <Link to={`/productos/${p.id}`} state={{ filtrosLista: parametros.toString() }} className="producto-nombre">
-            {p.nombre}
-          </Link>
-          <div className="producto-sku">{p.sku}</div>
-        </>
+        <div className="producto-celda">
+          <ProductoImagen src={p.imagen} />
+          <div>
+            <Link to={`/productos/${p.id}`} state={{ filtrosLista }} className="producto-nombre">
+              {p.nombre}
+            </Link>
+            <div className="producto-sku">{p.sku}</div>
+          </div>
+        </div>
       ),
     },
     { clave: 'categoria', titulo: 'Categoría', render: (p) => <Badge tono="info">{p.categoria}</Badge> },
@@ -190,45 +229,20 @@ export default function ProductosPage() {
       clave: 'precioVenta',
       titulo: 'Precio',
       alinear: 'derecha',
-      // Precio 0 = lo creó alguien sin prices.manage y falta asignarlo
-      render: (p) => (p.precioVenta === 0 ? <Badge tono="alerta">Sin precio</Badge> : formatoDinero.format(p.precioVenta)),
+      render: (p) => <PrecioVenta valor={p.precioVenta} />,
     },
     hayAcciones && {
       clave: 'acciones',
       titulo: 'Acciones',
-      render: (p) => (
-        <div className="productos-fila-acciones">
-          {verArchivados ? (
-            <Boton
-              variante="secundario"
-              icono="unarchive"
-              cargando={restaurando === p.id}
-              onClick={() => restaurar(p)}
-            >
-              Restaurar
-            </Boton>
-          ) : (
-            <>
-              {puede('products.update') && (
-                <Boton variante="secundario" icono="edit" aria-label={`Editar ${p.nombre}`} onClick={() => abrirFormulario(p.id)} />
-              )}
-              {puede('products.archive') && (
-                <Boton
-                  variante="secundario"
-                  icono="archive"
-                  aria-label={`Archivar ${p.nombre}`}
-                  onClick={() => {
-                    setAviso(null)
-                    setPorArchivar(p)
-                  }}
-                />
-              )}
-            </>
-          )}
-        </div>
-      ),
+      render: (p) => <div className="productos-fila-acciones">{renderAcciones(p)}</div>,
     },
   ].filter(Boolean)
+
+  const mensajeVacio = hayFiltros
+    ? 'Ningún producto coincide con los filtros.'
+    : verArchivados
+      ? 'No hay productos archivados.'
+      : 'No hay productos registrados.'
 
   return (
     <section>
@@ -243,14 +257,35 @@ export default function ProductosPage() {
           )}
         </div>
         <div className="productos-acciones">
-          <Boton
-            variante="secundario"
-            icono={compacta ? 'density_medium' : 'density_small'}
-            aria-pressed={compacta}
-            onClick={() => setCompacta(!compacta)}
-          >
-            {compacta ? 'Vista normal' : 'Vista compacta'}
-          </Boton>
+          <div className="productos-vista" role="group" aria-label="Vista">
+            <Boton
+              variante={vista === 'lista' ? 'primario' : 'secundario'}
+              icono="view_list"
+              aria-pressed={vista === 'lista'}
+              onClick={() => cambiarParametros({ vista: '' })}
+            >
+              Lista
+            </Boton>
+            <Boton
+              variante={vista === 'tarjetas' ? 'primario' : 'secundario'}
+              icono="grid_view"
+              aria-pressed={vista === 'tarjetas'}
+              onClick={() => cambiarParametros({ vista: 'tarjetas' })}
+            >
+              Tarjetas
+            </Boton>
+          </div>
+          {/* El modo compacto solo aplica a la tabla */}
+          {vista === 'lista' && (
+            <Boton
+              variante="secundario"
+              icono={compacta ? 'density_medium' : 'density_small'}
+              aria-pressed={compacta}
+              onClick={() => setCompacta(!compacta)}
+            >
+              {compacta ? 'Vista normal' : 'Vista compacta'}
+            </Boton>
+          )}
           {puede('products.create') && (
             <Boton icono="add" onClick={() => abrirFormulario(null)}>Nuevo producto</Boton>
           )}
@@ -336,18 +371,17 @@ export default function ProductosPage() {
 
       {datos && (
         <div aria-busy={cargando}>
-          <Tabla
-            columnas={columnas}
-            filas={datos.elementos}
-            compacta={compacta}
-            mensajeVacio={
-              hayFiltros
-                ? 'Ningún producto coincide con los filtros.'
-                : verArchivados
-                  ? 'No hay productos archivados.'
-                  : 'No hay productos registrados.'
-            }
-          />
+          {vista === 'tarjetas' ? (
+            <ProductoTarjetas
+              productos={datos.elementos}
+              mostrarCosto={puede('costs.read')}
+              filtrosLista={filtrosLista}
+              renderAcciones={hayAcciones ? renderAcciones : null}
+              mensajeVacio={mensajeVacio}
+            />
+          ) : (
+            <Tabla columnas={columnas} filas={datos.elementos} compacta={compacta} mensajeVacio={mensajeVacio} />
+          )}
           <Paginacion
             pagina={pagina}
             porPagina={porPagina}

@@ -4,6 +4,8 @@ import { listarCategorias, obtenerProducto } from '../../api/productos.js'
 import { usePuede } from '../../auth/usePuede.js'
 import Badge from '../../components/Badge.jsx'
 import Boton from '../../components/Boton.jsx'
+import PrecioVenta from './PrecioVenta.jsx'
+import ProductoImagen from './ProductoImagen.jsx'
 import ProductoModal from './ProductoModal.jsx'
 import { ESTADOS_STOCK, formatoDinero } from './productoFormato.js'
 import './productos.css'
@@ -47,9 +49,9 @@ export default function ProductoDetallePage() {
     if (puedeEditar) listarCategorias().then(setCategorias).catch(() => setCategorias([]))
   }, [puedeEditar])
 
-  function alGuardar(mensaje) {
+  function alGuardar(mensaje, tipo = 'exito') {
     setEditando(false)
-    setAviso(mensaje)
+    setAviso({ tipo, texto: mensaje })
     setRecargas((n) => n + 1)
   }
 
@@ -79,13 +81,16 @@ export default function ProductoDetallePage() {
       {volver}
 
       <header className="detalle-encabezado">
-        <div>
-          <h1>{producto.nombre}</h1>
-          <div className="detalle-etiquetas">
-            <span className="producto-sku">{producto.sku}</span>
-            <Badge tono="info">{producto.categoria}</Badge>
-            <Badge tono={estado.tono} punto>{estado.texto}</Badge>
-            {producto.archivado && <Badge tono="neutro">Archivado</Badge>}
+        <div className="detalle-titulo">
+          <ProductoImagen src={producto.imagen} alt={producto.nombre} tamano="grande" />
+          <div>
+            <h1>{producto.nombre}</h1>
+            <div className="detalle-etiquetas">
+              <span className="producto-sku">{producto.sku}</span>
+              <Badge tono="info">{producto.categoria}</Badge>
+              <Badge tono={estado.tono} punto>{estado.texto}</Badge>
+              {producto.archivado && <Badge tono="neutro">Archivado</Badge>}
+            </div>
           </div>
         </div>
         {/* Un archivado se restaura desde la lista antes de editarlo */}
@@ -94,7 +99,7 @@ export default function ProductoDetallePage() {
         )}
       </header>
 
-      {aviso && <p role="status" className="productos-aviso productos-aviso-exito">{aviso}</p>}
+      {aviso && <p role="status" className={`productos-aviso productos-aviso-${aviso.tipo}`}>{aviso.texto}</p>}
 
       <div className="detalle-tarjetas">
         <article className="detalle-tarjeta">
@@ -114,7 +119,7 @@ export default function ProductoDetallePage() {
           <dl>
             <dt>Precio de venta</dt>
             <dd className="cifra">
-              {producto.precioVenta === 0 ? <Badge tono="alerta">Sin precio</Badge> : formatoDinero.format(producto.precioVenta)}
+              <PrecioVenta valor={producto.precioVenta} />
             </dd>
             {/* Solo la UI lo oculta; sin costs.read el servidor ni siquiera manda el costo */}
             {puede('costs.read') && producto.precioCompra != null && (

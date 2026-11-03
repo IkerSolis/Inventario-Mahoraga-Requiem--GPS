@@ -5,7 +5,7 @@ import * as mock from './mock/productos.js'
 // GET /api/productos?pagina=1&porPagina=25&busqueda=&categoria=&estadoStock= → { elementos: [producto, ...], total }
 // producto: { id, sku, nombre, descripcion, categoria, marca, unidad, precioCompra, precioVenta,
 //             existencias, stockMinimo, estadoStock: 'disponible' | 'bajo' | 'agotado',
-//             pasillo, rack, gaveta, archivado }
+//             pasillo, rack, gaveta, archivado, imagen: URL o null }
 // Sin archivados=true el servidor solo manda productos activos; con archivados=true, solo los archivados.
 // Sin el permiso costs.read el servidor no debería mandar precioCompra.
 // busqueda compara contra nombre y SKU; los filtros vacíos no se mandan.
@@ -36,6 +36,15 @@ export function crearProducto(datos) {
 export function actualizarProducto(id, datos) {
   if (usarMock) return mock.actualizarProducto(id, datos)
   return pedir(`/productos/${id}`, { method: 'PATCH', body: JSON.stringify(datos) })
+}
+
+// POST /api/productos/:id/imagen (multipart, campo "imagen") → producto con su nueva URL de imagen.
+// El servidor valida con Multer (solo PNG/JPG, máximo 2 MB); el formulario también lo valida antes de enviar.
+export function subirImagenProducto(id, archivo) {
+  if (usarMock) return mock.subirImagenProducto(id, archivo)
+  const datos = new FormData()
+  datos.append('imagen', archivo)
+  return pedir(`/productos/${id}/imagen`, { method: 'POST', body: datos })
 }
 
 // POST /api/productos/:id/archivar y /restaurar → producto. Archivar no borra; requiere products.archive.

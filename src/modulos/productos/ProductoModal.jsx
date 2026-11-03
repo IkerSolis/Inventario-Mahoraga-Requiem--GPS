@@ -1,12 +1,13 @@
-import { useEffect, useId, useState } from 'react'
-import { actualizarProducto, crearProducto, obtenerProducto } from '../../api/productos.js'
+import { useEffect, useId, useMemo, useState } from 'react'
+import { actualizarProducto, crearProducto, obtenerProducto, subirImagenProducto } from '../../api/productos.js'
 import { usePuede } from '../../auth/usePuede.js'
 import Boton from '../../components/Boton.jsx'
 import Input from '../../components/Input.jsx'
 import Modal from '../../components/Modal.jsx'
 import Select from '../../components/Select.jsx'
 import Textarea from '../../components/Textarea.jsx'
-import { UNIDADES, erroresPorCampo, esquemaSegunPermisos } from './productoSchema.js'
+import ProductoImagen from './ProductoImagen.jsx'
+import { UNIDADES, erroresPorCampo, esquemaSegunPermisos, validarImagen } from './productoSchema.js'
 import './productos.css'
 import './ProductoModal.css'
 
@@ -44,6 +45,15 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
   const [errores, setErrores] = useState({})
   const [errorServidor, setErrorServidor] = useState(null)
   const [guardando, setGuardando] = useState(false)
+  const [archivo, setArchivo] = useState(null) // imagen nueva elegida (File), todavía sin subir
+
+  // Vista previa: el navegador crea una URL temporal para el archivo; se libera al cambiarlo o al cerrar
+  const vistaPrevia = useMemo(() => (archivo ? URL.createObjectURL(archivo) : null), [archivo])
+  useEffect(() => {
+    return () => {
+      if (vistaPrevia) URL.revokeObjectURL(vistaPrevia)
+    }
+  }, [vistaPrevia])
 
   useEffect(() => {
     if (esNuevo) return
@@ -76,21 +86,50 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
     if (errores[name]) setErrores({ ...errores, [name]: undefined })
   }
 
+  // La imagen se valida en cuanto se elige, sin esperar a guardar
+  function elegirImagen(e) {
+    const elegido = e.target.files[0]
+    if (!elegido) return
+    const problema = validarImagen(elegido)
+    if (problema) {
+      e.target.value = '' // vacía el campo para que no parezca elegida
+      setArchivo(null)
+      setErrores({ ...errores, imagen: problema })
+      return
+    }
+    setArchivo(elegido)
+    setErrores({ ...errores, imagen: undefined })
+  }
+
   async function guardar(e) {
     e.preventDefault()
     const esquema = esquemaSegunPermisos({ puedeEditarCosto: puedeVerCosto, puedeEditarPrecio })
     const resultado = esquema.safeParse(valores)
-    if (!resultado.success) {
-      setErrores(erroresPorCampo(resultado.error))
+    if (!resultado.success || errores.imagen) {
+      const erroresZod = resultado.success ? {} : erroresPorCampo(resultado.error)
+      setErrores({ ...erroresZod, imagen: errores.imagen })
       return
     }
 
     setGuardando(true)
     setErrorServidor(null)
     try {
-      if (esNuevo) await crearProducto(resultado.data)
-      else await actualizarProducto(producto.id, resultado.data)
-      onGuardado(esNuevo ? 'Producto creado.' : 'Cambios guardados.')
+      const guardado = esNuevo
+        ? await crearProducto(resultado.data)
+        : await actualizarProducto(producto.id, resultado.data)
+      const mensaje = esNuevo ? 'Producto creado.' : 'Cambios guardados.'
+
+      // La imagen va en otra petición (multipart). Si falla, el producto ya quedó guardado:
+      // se cierra el modal con un aviso en lugar de dejarlo abierto, para no crear el producto dos veces.
+      if (archivo) {
+        try {
+          await subirImagenProducto(guardado.id, archivo)
+        } catch (error) {
+          onGuardado(`${mensaje} Pero la imagen no se pudo subir: ${error.message}`, 'alerta')
+          return
+        }
+      }
+      onGuardado(mensaje)
     } catch (error) {
       setErrorServidor(error.message)
     } finally {
@@ -142,6 +181,18 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
           </div>
           <div className="producto-form-completo">
             <Textarea etiqueta="Descripción (opcional)" maxLength={500} {...campo('descripcion')} />
+          </div>
+
+          {/* Muestra la imagen nueva si eligieron una; si no, la que ya tenía el producto */}
+          <div className="producto-form-completo producto-form-imagen">
+            <ProductoImagen src={vistaPrevia ?? producto?.imagen} alt="Vista previa de la imagen" tamano="grande" />
+            <Input
+              etiqueta="Imagen (opcional, PNG o JPG de hasta 2 MB)"
+              type="file"
+              accept="image/png,image/jpeg"
+              onChange={elegirImagen}
+              error={errores.imagen}
+            />
           </div>
 
           <Select etiqueta="Categoría" {...campo('categoria')}>

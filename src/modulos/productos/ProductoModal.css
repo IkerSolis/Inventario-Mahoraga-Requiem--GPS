@@ -8,6 +8,17 @@
   grid-column: 1 / -1;
 }
 
+.producto-form-imagen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.producto-form-imagen .campo {
+  flex: 1 1 16rem;
+}
+
 .producto-ubicacion {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

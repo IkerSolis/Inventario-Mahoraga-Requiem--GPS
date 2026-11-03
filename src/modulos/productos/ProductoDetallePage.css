@@ -20,6 +20,13 @@
   margin-bottom: 1.5rem;
 }
 
+.detalle-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+}
+
 .detalle-encabezado h1 {
   margin: 0 0 0.5rem;
 }

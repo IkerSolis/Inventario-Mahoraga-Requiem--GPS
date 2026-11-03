@@ -32,3 +32,44 @@
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
 }
+
+/* Imagen del producto (ProductoImagen.jsx). object-fit: cover recorta sin deformar. */
+.producto-imagen {
+  display: block;
+  flex-shrink: 0;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-control);
+  background: var(--color-fondo);
+  object-fit: cover;
+}
+
+.producto-imagen-vacia {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--color-manejador);
+}
+
+.producto-imagen-chica {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.producto-imagen-tarjeta {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  height: auto;
+}
+
+.producto-imagen-tarjeta .material-symbols-outlined {
+  font-size: 2.5rem;
+}
+
+.producto-imagen-grande {
+  width: 10rem;
+  height: 10rem;
+}
+
+.producto-imagen-grande .material-symbols-outlined {
+  font-size: 3rem;
+}

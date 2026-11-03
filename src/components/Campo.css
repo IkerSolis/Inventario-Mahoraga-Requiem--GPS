@@ -20,6 +20,10 @@
   font: inherit;
 }
 
+.campo-control[type='file'] {
+  padding: 0.5rem 0.75rem;
+}
+
 textarea.campo-control {
   padding: 0.5rem 0.75rem;
   resize: vertical;
