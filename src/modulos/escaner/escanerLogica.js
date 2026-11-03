@@ -45,3 +45,11 @@ export function elegirModo(claveEnUrl, permitidos) {
 export function modoPorTecla(tecla, permitidos) {
   return permitidos.find((modo) => modo.tecla === tecla) ?? null
 }
+
+// ¿El código leído es del producto que ya está en pantalla? (por código de barras o por SKU)
+// Sirve para que leer otra vez la misma pieza sume 1 en lugar de buscarla de nuevo.
+export function esMismoProducto(codigo, producto) {
+  if (!producto) return false
+  const limpio = codigo.trim().toUpperCase()
+  return limpio === producto.codigoBarras || limpio === producto.sku.toUpperCase()
+}

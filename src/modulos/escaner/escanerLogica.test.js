@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { MODOS, elegirModo, modoPorTecla, modosPermitidos } from './escanerLogica.js'
+import { MODOS, elegirModo, esMismoProducto, modoPorTecla, modosPermitidos } from './escanerLogica.js'
 
 // Simula usePuede() con una lista fija de permisos
 const conPermisos = (lista) => (permiso) => lista.includes(permiso)
@@ -24,5 +24,19 @@ describe('modos del escáner', () => {
     expect(modoPorTecla('F3', permitidos).clave).toBe('auditoria')
     expect(modoPorTecla('F2', permitidos)).toBeNull()
     expect(modoPorTecla('Enter', permitidos)).toBeNull()
+  })
+})
+
+describe('esMismoProducto', () => {
+  const producto = { codigoBarras: '7500000000015', sku: 'MOD-1000' }
+
+  test('reconoce el mismo producto por código de barras o SKU', () => {
+    expect(esMismoProducto('7500000000015', producto)).toBe(true)
+    expect(esMismoProducto(' mod-1000 ', producto)).toBe(true)
+  })
+
+  test('otro código o sin producto en pantalla no es el mismo', () => {
+    expect(esMismoProducto('7500000000022', producto)).toBe(false)
+    expect(esMismoProducto('7500000000015', null)).toBe(false)
   })
 })

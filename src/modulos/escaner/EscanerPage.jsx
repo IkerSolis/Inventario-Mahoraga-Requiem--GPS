@@ -1,7 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { buscarProductoPorCodigo } from '../../api/productos.js'
 import { usePuede } from '../../auth/usePuede.js'
-import { elegirModo, modoPorTecla, modosPermitidos } from './escanerLogica.js'
+import LecturaActual from './LecturaActual.jsx'
+import LectorCodigo from './LectorCodigo.jsx'
+import { elegirModo, esMismoProducto, modoPorTecla, modosPermitidos } from './escanerLogica.js'
 import './EscanerPage.css'
 
 export default function EscanerPage() {
@@ -11,17 +14,69 @@ export default function EscanerPage() {
   // El modo vive en la URL (?modo=salida), igual que los filtros de Productos
   const modo = elegirModo(parametros.get('modo'), permitidos)
 
+  const [lectura, setLectura] = useState(null) // { producto, cantidad } o null
+  const [errorLectura, setErrorLectura] = useState(null)
+  const [buscando, setBuscando] = useState(false)
+  const lector = useRef(null)
+  // Número de la última búsqueda: si llegan dos lecturas seguidas, se ignora la respuesta de la vieja
+  const ultimaBusqueda = useRef(0)
+
+  function enfocarLector() {
+    lector.current?.focus()
+  }
+
+  function descartar() {
+    setLectura(null)
+    setErrorLectura(null)
+    enfocarLector()
+  }
+
+  // Cambiar de modo descarta la lectura, porque una entrada a medias no debe convertirse en salida
+  function cambiarModo(clave) {
+    setParametros({ modo: clave }, { replace: true })
+    descartar()
+  }
+
+  async function leer(codigo) {
+    setErrorLectura(null)
+    if (lectura && esMismoProducto(codigo, lectura.producto)) {
+      setLectura({ ...lectura, cantidad: lectura.cantidad + 1 })
+      return
+    }
+
+    const numero = ++ultimaBusqueda.current
+    setBuscando(true)
+    try {
+      const producto = await buscarProductoPorCodigo(codigo)
+      if (numero !== ultimaBusqueda.current) return
+      setLectura({ producto, cantidad: 1 })
+    } catch (e) {
+      if (numero !== ultimaBusqueda.current) return
+      setLectura(null)
+      setErrorLectura(e.estado === 404 ? `No existe un producto con el código ${codigo}` : e.message)
+    } finally {
+      if (numero === ultimaBusqueda.current) setBuscando(false)
+      enfocarLector()
+    }
+  }
+
   // F1, F2 y F3 cambian de modo. preventDefault porque el navegador las usa (F1 = ayuda, F3 = buscar).
+  // Esc descarta la lectura actual.
+  // Sin lista de dependencias: se vuelve a registrar en cada render para usar siempre la lectura y el modo actuales.
   useEffect(() => {
     function alPresionarTecla(e) {
+      if (e.key === 'Escape' && lectura) {
+        descartar()
+        return
+      }
       if (!['F1', 'F2', 'F3'].includes(e.key)) return
       e.preventDefault()
       const elegido = modoPorTecla(e.key, permitidos)
-      if (elegido) setParametros({ modo: elegido.clave }, { replace: true })
+      if (elegido) cambiarModo(elegido.clave)
     }
     window.addEventListener('keydown', alPresionarTecla)
     return () => window.removeEventListener('keydown', alPresionarTecla)
-  }, [permitidos, setParametros])
+  })
 
   if (!modo) {
     return (
@@ -55,7 +110,7 @@ export default function EscanerPage() {
             className="escaner-modo"
             aria-pressed={m.clave === modo.clave}
             aria-keyshortcuts={m.tecla}
-            onClick={() => setParametros({ modo: m.clave }, { replace: true })}
+            onClick={() => cambiarModo(m.clave)}
           >
             <span className="material-symbols-outlined escaner-modo-icono" aria-hidden="true">
               {m.icono}
@@ -71,7 +126,21 @@ export default function EscanerPage() {
 
       <div className="escaner-cuerpo">
         <div className="escaner-panel">
-          <p className="escaner-vacio">Modo {modo.titulo.toLowerCase()}: lee un código para empezar.</p>
+          <LectorCodigo ref={lector} onLeer={leer} buscando={buscando} />
+
+          {errorLectura && (
+            <p role="alert" className="escaner-error">
+              {errorLectura}
+            </p>
+          )}
+
+          {lectura ? (
+            <LecturaActual lectura={lectura} onDescartar={descartar} />
+          ) : (
+            !errorLectura && (
+              <p className="escaner-vacio">Modo {modo.titulo.toLowerCase()}: lee un código para empezar.</p>
+            )
+          )}
         </div>
       </div>
     </section>
