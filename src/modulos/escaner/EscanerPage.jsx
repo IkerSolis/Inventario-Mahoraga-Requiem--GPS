@@ -16,7 +16,19 @@ import {
   sumarCantidad,
   validarCantidad,
 } from './escanerLogica.js'
+import ManifiestoSesion from './ManifiestoSesion.jsx'
 import './EscanerPage.css'
+
+const CLAVE_MANIFIESTO = 'escaner-manifiesto'
+const MAXIMO_MANIFIESTO = 200 // para no llenar el almacenamiento en una sesión muy larga
+
+function cargarManifiesto() {
+  try {
+    return JSON.parse(sessionStorage.getItem(CLAVE_MANIFIESTO)) ?? []
+  } catch {
+    return []
+  }
+}
 
 export default function EscanerPage() {
   const puede = usePuede()
@@ -34,6 +46,16 @@ export default function EscanerPage() {
   const [confirmando, setConfirmando] = useState(false)
   const [errorMovimiento, setErrorMovimiento] = useState(null)
   const [ultimoMovimiento, setUltimoMovimiento] = useState(null) // texto del último movimiento registrado
+  const [manifiesto, setManifiesto] = useState(cargarManifiesto) // movimientos de la sesión, el más nuevo primero
+
+  // El manifiesto se guarda en sessionStorage: sobrevive a recargar la página, se borra al cerrar la pestaña
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CLAVE_MANIFIESTO, JSON.stringify(manifiesto))
+    } catch {
+      // Sin almacenamiento (modo privado o bloqueado): el manifiesto solo vive mientras la página esté abierta
+    }
+  }, [manifiesto])
   const lector = useRef(null)
   // Número de la última búsqueda: si llegan dos lecturas seguidas, se ignora la respuesta de la vieja
   const ultimaBusqueda = useRef(0)
@@ -95,6 +117,8 @@ export default function EscanerPage() {
       }
       const { movimiento } = await registrarMovimiento(datos, lectura.clave)
       setUltimoMovimiento(resumenMovimiento(movimiento, producto.nombre))
+      const registro = { ...movimiento, nombre: producto.nombre, sku: producto.sku, clave: lectura.clave }
+      setManifiesto((anterior) => [registro, ...anterior].slice(0, MAXIMO_MANIFIESTO))
       setLectura(null)
       enfocarLector()
     } catch (e) {
@@ -244,6 +268,8 @@ export default function EscanerPage() {
             )
           )}
         </div>
+
+        <ManifiestoSesion movimientos={manifiesto} />
       </div>
     </section>
   )

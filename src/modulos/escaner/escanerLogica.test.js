@@ -7,6 +7,7 @@ import {
   modosPermitidos,
   nuevaClave,
   resumenMovimiento,
+  resumirManifiesto,
   sumarCantidad,
   textoCantidad,
   textoDiferencia,
@@ -100,5 +101,19 @@ describe('textos de movimientos', () => {
     expect(resumenMovimiento(conteo, 'Jeans')).toBe(
       'Conteo registrado: Jeans, 15 contadas (sistema 17, diferencia −2).',
     )
+  })
+})
+
+describe('resumirManifiesto', () => {
+  test('suma piezas por tipo y cuenta conteos con diferencia', () => {
+    const movimientos = [
+      { tipo: 'entrada', cantidad: 10 },
+      { tipo: 'entrada', cantidad: 5 },
+      { tipo: 'salida', cantidad: 3 },
+      { tipo: 'conteo', cantidad: 12, diferencia: 0 },
+      { tipo: 'conteo', cantidad: 7, diferencia: -2 },
+    ]
+    expect(resumirManifiesto(movimientos)).toEqual({ entradas: 15, salidas: 3, conteos: 2, conDiferencia: 1 })
+    expect(resumirManifiesto([])).toEqual({ entradas: 0, salidas: 0, conteos: 0, conDiferencia: 0 })
   })
 })

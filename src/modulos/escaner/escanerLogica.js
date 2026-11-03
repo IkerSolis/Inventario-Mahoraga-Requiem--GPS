@@ -112,3 +112,17 @@ export function resumenMovimiento(movimiento, nombreProducto) {
   const nombre = tipo === 'entrada' ? 'Entrada registrada' : 'Salida registrada'
   return `${nombre}: ${nombreProducto} ${textoCantidad(tipo, cantidad)} (${existenciasAntes} → ${existenciasDespues}).`
 }
+
+// Totales del manifiesto: piezas que entraron y salieron, conteos hechos y cuántos tuvieron diferencia
+export function resumirManifiesto(movimientos) {
+  const resumen = { entradas: 0, salidas: 0, conteos: 0, conDiferencia: 0 }
+  for (const m of movimientos) {
+    if (m.tipo === 'entrada') resumen.entradas += m.cantidad
+    if (m.tipo === 'salida') resumen.salidas += m.cantidad
+    if (m.tipo === 'conteo') {
+      resumen.conteos += 1
+      if (m.diferencia !== 0) resumen.conDiferencia += 1
+    }
+  }
+  return resumen
+}

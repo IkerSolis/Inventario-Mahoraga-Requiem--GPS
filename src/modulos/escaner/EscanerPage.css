@@ -338,3 +338,53 @@
     min-height: 44px;
   }
 }
+
+/* Manifiesto de la sesión */
+.manifiesto {
+  display: grid;
+  gap: 1rem;
+}
+
+.manifiesto-encabezado {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.manifiesto-encabezado h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.manifiesto-resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.manifiesto-resumen div {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radio-control);
+  background: var(--color-fondo);
+  text-align: center;
+}
+
+.manifiesto-resumen dt {
+  color: var(--color-texto-suave);
+  font-size: 0.8125rem;
+}
+
+.manifiesto-resumen dd {
+  margin: 0.25rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.manifiesto-alerta {
+  color: color-mix(in srgb, var(--color-alerta) 55%, black);
+}
+
+.manifiesto-nombre {
+  font-weight: 600;
+}
