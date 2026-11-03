@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { actualizarProducto, crearProducto, listarProductos, obtenerProducto } from './productos.js'
+import {
+  actualizarProducto,
+  archivarProducto,
+  crearProducto,
+  listarProductos,
+  obtenerProducto,
+  restaurarProducto,
+} from './productos.js'
 import { obtenerSesion } from './sesion.js'
 
 describe('mock de productos', () => {
@@ -63,5 +70,26 @@ describe('mock de crear y actualizar', () => {
     const actualizado = await actualizarProducto(2, { nombre: 'Jeans editados', stockMinimo: 100 })
     expect(actualizado.nombre).toBe('Jeans editados')
     expect(actualizado.estadoStock).toBe('bajo')
+  })
+})
+
+describe('mock de archivar', () => {
+  test('sin products.archive se rechaza', async () => {
+    await obtenerSesion('R3')
+    await expect(archivarProducto(3)).rejects.toThrow('products.archive')
+  })
+
+  test('archivar saca el producto de la lista normal y restaurar lo regresa', async () => {
+    await obtenerSesion('R0')
+    await archivarProducto(3)
+
+    const activos = await listarProductos({ porPagina: 100 })
+    expect(activos.elementos.some((p) => p.id === 3)).toBe(false)
+    const archivados = await listarProductos({ archivados: true })
+    expect(archivados.elementos.map((p) => p.id)).toContain(3)
+
+    await restaurarProducto(3)
+    const deNuevo = await listarProductos({ porPagina: 100 })
+    expect(deNuevo.elementos.some((p) => p.id === 3)).toBe(true)
   })
 })

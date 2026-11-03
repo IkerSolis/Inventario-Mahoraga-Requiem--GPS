@@ -7,6 +7,7 @@ import Modal from '../../components/Modal.jsx'
 import Select from '../../components/Select.jsx'
 import Textarea from '../../components/Textarea.jsx'
 import { UNIDADES, erroresPorCampo, esquemaSegunPermisos } from './productoSchema.js'
+import './productos.css'
 import './ProductoModal.css'
 
 // Los <input> trabajan con texto, así que los números se pasan a texto para el formulario
@@ -121,17 +122,17 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
     >
       {cargando && <p>Cargando producto…</p>}
       {errorCarga && (
-        <p role="alert" className="producto-form-aviso">No se pudo cargar el producto: {errorCarga}</p>
+        <p role="alert" className="productos-aviso productos-aviso-error">No se pudo cargar el producto: {errorCarga}</p>
       )}
 
       {/* noValidate: los mensajes los da Zod, no el navegador */}
       {!cargando && !errorCarga && (
         <form id={idFormulario} className="producto-form" onSubmit={guardar} noValidate>
           {hayErrores && (
-            <p role="alert" className="producto-form-aviso producto-form-completo">Revisa los campos marcados.</p>
+            <p role="alert" className="productos-aviso productos-aviso-error producto-form-completo">Revisa los campos marcados.</p>
           )}
           {errorServidor && (
-            <p role="alert" className="producto-form-aviso producto-form-completo">
+            <p role="alert" className="productos-aviso productos-aviso-error producto-form-completo">
               No se pudo guardar: {errorServidor}
             </p>
           )}

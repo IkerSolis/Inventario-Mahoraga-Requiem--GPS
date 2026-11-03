@@ -45,6 +45,7 @@ const productos = Array.from({ length: 48 }, (_, i) => {
     pasillo: String((i % 4) + 1),
     rack: 'ABCD'[i % 4],
     gaveta: String((i % 6) + 1),
+    archivado: false,
   }
 })
 
@@ -60,11 +61,13 @@ function normalizar(texto) {
   return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 }
 
-// Los filtros vacíos ('' o undefined) no filtran nada
-export function listarProductos({ pagina = 1, porPagina = 25, busqueda, categoria, estadoStock } = {}) {
+// Los filtros vacíos ('' o undefined) no filtran nada.
+// Por defecto solo trae los activos; con archivados: true trae solo los archivados.
+export function listarProductos({ pagina = 1, porPagina = 25, busqueda, categoria, estadoStock, archivados = false } = {}) {
   const texto = normalizar(busqueda ?? '').trim()
   const filtrados = productos.filter(
     (p) =>
+      p.archivado === archivados &&
       (!texto || normalizar(p.nombre).includes(texto) || normalizar(p.sku).includes(texto)) &&
       (!categoria || p.categoria === categoria) &&
       (!estadoStock || p.estadoStock === estadoStock),
@@ -104,6 +107,7 @@ export async function crearProducto(datos) {
     id: Math.max(...productos.map((p) => p.id)) + 1,
     sku: `MOD-${String(2000 + productos.length)}`, // el backend genera el SKU
     existencias: 0, // las existencias solo cambian con movimientos de inventario
+    archivado: false,
   }
   nuevo.estadoStock = calcularEstadoStock(nuevo.existencias, nuevo.stockMinimo)
   productos.unshift(nuevo) // al inicio, para que se vea en la primera página
@@ -118,6 +122,23 @@ export async function actualizarProducto(id, datos) {
   Object.assign(producto, quitarCamposSinPermiso(datos))
   producto.estadoStock = calcularEstadoStock(producto.existencias, producto.stockMinimo)
   return esperar(quitarCostoSiNoPuede(producto))
+}
+
+// Archivar no borra: el producto conserva su historial (kardex) y se puede restaurar
+async function cambiarArchivado(id, archivado) {
+  exigirPermiso('products.archive')
+  const producto = productos.find((p) => p.id === id)
+  if (!producto) throw new Error('El producto no existe')
+  producto.archivado = archivado
+  return esperar(quitarCostoSiNoPuede(producto))
+}
+
+export function archivarProducto(id) {
+  return cambiarArchivado(id, true)
+}
+
+export function restaurarProducto(id) {
+  return cambiarArchivado(id, false)
 }
 
 export function listarCategorias() {

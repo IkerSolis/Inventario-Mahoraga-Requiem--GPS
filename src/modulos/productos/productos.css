@@ -1,0 +1,34 @@
+/* Clases que comparten varias pantallas del módulo de productos (lista, detalle y modales) */
+
+/* Mensaje en caja de color: agregar productos-aviso-exito, -error o -alerta */
+.productos-aviso {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radio-control);
+}
+
+.productos-aviso-exito {
+  background: color-mix(in srgb, var(--color-optimo) 12%, white);
+  color: color-mix(in srgb, var(--color-optimo) 50%, black);
+}
+
+.productos-aviso-error {
+  background: color-mix(in srgb, var(--color-critico) 10%, white);
+  color: color-mix(in srgb, var(--color-critico) 75%, black);
+}
+
+.productos-aviso-alerta {
+  background: color-mix(in srgb, var(--color-alerta) 14%, white);
+  color: color-mix(in srgb, var(--color-alerta) 55%, black);
+}
+
+/* Error de carga, sin caja */
+.productos-error {
+  color: color-mix(in srgb, var(--color-critico) 75%, black);
+}
+
+.producto-sku {
+  color: var(--color-texto-suave);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}

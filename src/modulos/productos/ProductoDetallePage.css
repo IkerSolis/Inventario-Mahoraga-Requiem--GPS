@@ -1,0 +1,67 @@
+.detalle-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.5rem;
+  margin-bottom: 0.5rem;
+  text-decoration: none;
+}
+
+.detalle-volver:hover {
+  text-decoration: underline;
+}
+
+.detalle-encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.detalle-encabezado h1 {
+  margin: 0 0 0.5rem;
+}
+
+.detalle-etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detalle-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.detalle-tarjeta {
+  padding: 1.25rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+}
+
+.detalle-tarjeta h2 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+}
+
+.detalle-tarjeta dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.625rem 1rem;
+  margin: 0;
+}
+
+.detalle-tarjeta dt {
+  color: var(--color-texto-suave);
+  font-size: 0.875rem;
+}
+
+.detalle-tarjeta dd {
+  margin: 0;
+  text-align: right;
+}
