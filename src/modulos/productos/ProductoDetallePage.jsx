@@ -18,6 +18,18 @@ export default function ProductoDetallePage() {
   const [editando, setEditando] = useState(false)
   const [categorias, setCategorias] = useState([])
   const [aviso, setAviso] = useState(null)
+  const [copiado, setCopiado] = useState(false)
+
+  // Para probar el escáner sin lector: se copia el código y se pega en el campo de lectura
+  async function copiarCodigo() {
+    try {
+      await navigator.clipboard.writeText(producto.codigoBarras)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 2000)
+    } catch {
+      // Sin permiso para el portapapeles: el código sigue visible para copiarlo a mano
+    }
+  }
   const [recargas, setRecargas] = useState(0)
 
   // Igual que en la lista: la respuesta recuerda con qué "clave" se pidió; si no es la actual, está cargando
@@ -162,6 +174,16 @@ export default function ProductoDetallePage() {
         <article className="detalle-tarjeta">
           <h2>Información</h2>
           <dl>
+            <dt>Código de barras</dt>
+            <dd className="detalle-codigo">
+              <span className="cifra">{producto.codigoBarras}</span>
+              <Boton
+                variante="secundario"
+                icono={copiado ? 'check' : 'content_copy'}
+                aria-label={copiado ? 'Código copiado' : 'Copiar código de barras'}
+                onClick={copiarCodigo}
+              />
+            </dd>
             <dt>Marca</dt>
             <dd>{producto.marca || '—'}</dd>
             <dt>Unidad</dt>

@@ -1,4 +1,5 @@
 // Simula los endpoints de productos con datos en memoria.
+import { errorHttp } from '../cliente.js'
 import { esperar } from './esperar.js'
 import { tienePermiso } from './sesion.js'
 
@@ -20,18 +21,33 @@ const base = [
 const STOCK_MINIMO = 10
 
 // El backend calcula el estado de stock en la consulta comparando contra el mínimo; aquí lo imitamos
-function calcularEstadoStock(existencias, minimo) {
+export function calcularEstadoStock(existencias, minimo) {
   if (existencias === 0) return 'agotado'
   if (existencias < minimo) return 'bajo'
   return 'disponible'
 }
 
-const productos = Array.from({ length: 48 }, (_, i) => {
+// El backend genera el código de barras. Aquí: 750 (prefijo de México) + id en 9 dígitos + dígito verificador.
+// El dígito verificador es el que valida cualquier lector: suma los 12 dígitos alternando ×1 y ×3.
+export function digitoVerificadorEan13(doceDigitos) {
+  let suma = 0
+  for (let i = 0; i < 12; i++) suma += Number(doceDigitos[i]) * (i % 2 === 0 ? 1 : 3)
+  return (10 - (suma % 10)) % 10
+}
+
+function generarEan13(id) {
+  const doce = '750' + String(id).padStart(9, '0')
+  return doce + digitoVerificadorEan13(doce)
+}
+
+// Exportado para el mock de movimientos, que modifica las existencias de estos mismos productos
+export const productos = Array.from({ length: 48 }, (_, i) => {
   const b = base[i % base.length]
   const existencias = (i * 17) % 60
   return {
     id: i + 1,
     sku: `MOD-${String(1000 + i * 7)}`,
+    codigoBarras: generarEan13(i + 1),
     nombre: i < base.length ? b.nombre : `${b.nombre} ${Math.floor(i / base.length) + 1}`,
     descripcion: '',
     categoria: b.categoria,
@@ -51,7 +67,7 @@ const productos = Array.from({ length: 48 }, (_, i) => {
 })
 
 // Igual que el servidor: sin costs.read el costo no viaja en la respuesta
-function quitarCostoSiNoPuede(producto) {
+export function quitarCostoSiNoPuede(producto) {
   if (tienePermiso('costs.read')) return producto
   const { precioCompra, ...sinCosto } = producto
   return sinCosto
@@ -97,6 +113,15 @@ export async function obtenerProducto(id) {
   return esperar(quitarCostoSiNoPuede(producto))
 }
 
+// Busca por código de barras o por SKU (lo que lea el escáner o escriba el usuario)
+export async function buscarProductoPorCodigo(codigo) {
+  const buscado = codigo.trim().toUpperCase()
+  const producto = productos.find((p) => p.codigoBarras === buscado || p.sku.toUpperCase() === buscado)
+  if (!producto) throw errorHttp(404, `No existe un producto con el código ${codigo.trim()}`)
+  if (producto.archivado) throw errorHttp(409, `${producto.nombre} está archivado; restáuralo para moverlo`)
+  return esperar(quitarCostoSiNoPuede(producto))
+}
+
 // Igual que el servidor: los campos sin permiso se ignoran aunque vengan en la petición
 function quitarCamposSinPermiso(datos) {
   const permitidos = { ...datos }
@@ -111,12 +136,14 @@ function exigirPermiso(permiso) {
 
 export async function crearProducto(datos) {
   exigirPermiso('products.create')
+  const id = Math.max(...productos.map((p) => p.id)) + 1
   const nuevo = {
     precioVenta: 0, // si quien crea no gestiona precios, queda en 0 hasta que alguien con prices.manage lo asigne
     precioCompra: 0,
     ...quitarCamposSinPermiso(datos),
-    id: Math.max(...productos.map((p) => p.id)) + 1,
-    sku: `MOD-${String(2000 + productos.length)}`, // el backend genera el SKU
+    id,
+    sku: `MOD-${String(2000 + productos.length)}`, // el backend genera el SKU y el código de barras
+    codigoBarras: generarEan13(id),
     existencias: 0, // las existencias solo cambian con movimientos de inventario
     archivado: false,
     imagen: null,
