@@ -388,3 +388,69 @@
 .manifiesto-nombre {
   font-weight: 600;
 }
+
+/* Cámara e imagen */
+.escaner-alternativas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* El <label> con estilo de botón muestra el contorno cuando su input oculto tiene el foco */
+.imagen-escaner:focus-within {
+  outline: 2px solid var(--color-primario);
+  outline-offset: 2px;
+}
+
+.imagen-escaner-leyendo {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.camara {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  margin-top: 0.75rem;
+}
+
+.camara-video {
+  width: 100%;
+  max-width: 32rem;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radio-control);
+  background: #0f172a;
+  object-fit: cover;
+}
+
+.camara-ayuda {
+  margin: 0;
+  color: var(--color-texto-suave);
+  font-size: 0.8125rem;
+}
+
+/* Página de desarrollo /codigos-prueba */
+.codigos-prueba {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.codigos-prueba li {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: center;
+  padding: 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+  background: #fff;
+}
+
+.codigo-barras {
+  max-width: 100%;
+  height: auto;
+}

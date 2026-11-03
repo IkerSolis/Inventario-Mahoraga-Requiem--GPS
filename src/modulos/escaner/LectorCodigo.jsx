@@ -5,7 +5,8 @@ import Input from '../../components/Input.jsx'
 // Campo donde "escribe" el lector USB: el lector se comporta como teclado, teclea el código y manda Enter.
 // Sin lector se puede escribir el código (o el SKU) a mano y presionar Enter.
 // ref: la página lo usa para devolver el foco al campo después de cada lectura.
-const LectorCodigo = forwardRef(function LectorCodigo({ onLeer, buscando }, ref) {
+// autoEnfocar: false en teléfono, para que no se abra el teclado al entrar.
+const LectorCodigo = forwardRef(function LectorCodigo({ onLeer, buscando, autoEnfocar = true }, ref) {
   const [codigo, setCodigo] = useState('')
   const [enfocado, setEnfocado] = useState(false)
 
@@ -17,7 +18,10 @@ const LectorCodigo = forwardRef(function LectorCodigo({ onLeer, buscando }, ref)
     setCodigo('') // listo para la siguiente lectura
   }
 
-  let estado = 'Lector en pausa: haz clic en el campo para seguir leyendo'
+  // En teléfono (autoEnfocar = false) no hay lector USB, así que no tiene sentido avisar que está "en pausa"
+  let estado = autoEnfocar
+    ? 'Lector en pausa: haz clic en el campo para seguir leyendo'
+    : 'Escribe el código o usa la cámara'
   if (enfocado) estado = 'Lector activo, esperando código'
   if (buscando) estado = 'Buscando producto…'
 
@@ -37,7 +41,7 @@ const LectorCodigo = forwardRef(function LectorCodigo({ onLeer, buscando }, ref)
             onChange={(e) => setCodigo(e.target.value)}
             onFocus={() => setEnfocado(true)}
             onBlur={() => setEnfocado(false)}
-            autoFocus
+            autoFocus={autoEnfocar}
             autoComplete="off"
             spellCheck={false}
             enterKeyHint="search"

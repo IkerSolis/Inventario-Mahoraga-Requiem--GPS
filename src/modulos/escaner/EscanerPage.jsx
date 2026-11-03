@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { buscarProductoPorCodigo } from '../../api/productos.js'
 import { usePuede } from '../../auth/usePuede.js'
 import { registrarMovimiento } from '../../api/movimientos.js'
+import Boton from '../../components/Boton.jsx'
 import ConfirmacionMovimiento from './ConfirmacionMovimiento.jsx'
 import LecturaActual from './LecturaActual.jsx'
 import LectorCodigo from './LectorCodigo.jsx'
@@ -16,11 +17,19 @@ import {
   sumarCantidad,
   validarCantidad,
 } from './escanerLogica.js'
+import ImagenEscaner from './ImagenEscaner.jsx'
 import ManifiestoSesion from './ManifiestoSesion.jsx'
+import VistaCamara from './VistaCamara.jsx'
+import { hayCamaraDisponible } from './lectorZxing.js'
 import './EscanerPage.css'
 
 const CLAVE_MANIFIESTO = 'escaner-manifiesto'
 const MAXIMO_MANIFIESTO = 200 // para no llenar el almacenamiento en una sesión muy larga
+
+// Pantalla táctil sin mouse (teléfono o tableta)
+function esPantallaTactil() {
+  return window.matchMedia?.('(pointer: coarse)').matches ?? false
+}
 
 function cargarManifiesto() {
   try {
@@ -61,9 +70,26 @@ export default function EscanerPage() {
   const ultimaBusqueda = useRef(0)
   // Evita mandar dos veces la misma confirmación si presionan Ctrl+Enter muy rápido (antes de que React repinte)
   const enviando = useRef(false)
+  const [camaraAbierta, setCamaraAbierta] = useState(false)
 
+  // En teléfono no se devuelve el foco al campo: no hay lector USB y abriría el teclado en cada lectura
   function enfocarLector() {
+    if (esPantallaTactil()) return
     lector.current?.focus()
+  }
+
+  function abrirCamara() {
+    if (!hayCamaraDisponible()) {
+      setErrorLectura('La cámara solo funciona en https o en localhost. Desde el teléfono usa "npm run dev:red".')
+      return
+    }
+    setErrorLectura(null)
+    setCamaraAbierta(true)
+  }
+
+  function errorDeCamara(mensaje) {
+    setCamaraAbierta(false)
+    setErrorLectura(mensaje)
   }
 
   function descartar() {
@@ -234,7 +260,19 @@ export default function EscanerPage() {
 
       <div className="escaner-cuerpo">
         <div className="escaner-panel">
-          <LectorCodigo ref={lector} onLeer={leer} buscando={buscando} />
+          <LectorCodigo ref={lector} onLeer={leer} buscando={buscando} autoEnfocar={!esPantallaTactil()} />
+
+          <div className="escaner-alternativas">
+            {!camaraAbierta && (
+              <Boton variante="secundario" icono="photo_camera" onClick={abrirCamara}>
+                Usar cámara
+              </Boton>
+            )}
+            <ImagenEscaner onLeer={leer} onError={setErrorLectura} />
+          </div>
+          {camaraAbierta && (
+            <VistaCamara onLeer={leer} onError={errorDeCamara} onCerrar={() => setCamaraAbierta(false)} />
+          )}
 
           {errorLectura && (
             <p role="alert" className="escaner-error">

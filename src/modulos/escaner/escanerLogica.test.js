@@ -2,7 +2,9 @@ import { describe, expect, test } from 'vitest'
 import {
   MODOS,
   elegirModo,
+  esLecturaRepetida,
   esMismoProducto,
+  mensajeErrorCamara,
   modoPorTecla,
   modosPermitidos,
   nuevaClave,
@@ -115,5 +117,20 @@ describe('resumirManifiesto', () => {
     ]
     expect(resumirManifiesto(movimientos)).toEqual({ entradas: 15, salidas: 3, conteos: 2, conDiferencia: 1 })
     expect(resumirManifiesto([])).toEqual({ entradas: 0, salidas: 0, conteos: 0, conDiferencia: 0 })
+  })
+})
+
+describe('cámara', () => {
+  test('esLecturaRepetida ignora el mismo código durante la espera', () => {
+    const ultima = { texto: '7500000000015', momento: 1000 }
+    expect(esLecturaRepetida('7500000000015', 2500, ultima)).toBe(true)
+    expect(esLecturaRepetida('7500000000015', 3500, ultima)).toBe(false)
+    expect(esLecturaRepetida('7500000000022', 1500, ultima)).toBe(false)
+  })
+
+  test('mensajeErrorCamara', () => {
+    expect(mensajeErrorCamara({ name: 'NotAllowedError' })).toBe('No se dio permiso para usar la cámara.')
+    expect(mensajeErrorCamara({ name: 'NotFoundError' })).toBe('No se encontró una cámara.')
+    expect(mensajeErrorCamara(new Error('algo raro'))).toBe('No se pudo abrir la cámara: algo raro')
   })
 })

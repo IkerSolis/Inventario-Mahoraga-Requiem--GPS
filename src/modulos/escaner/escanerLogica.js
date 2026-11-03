@@ -126,3 +126,17 @@ export function resumirManifiesto(movimientos) {
   }
   return resumen
 }
+
+// La cámara lee muchas veces por segundo mientras el código sigue enfrente.
+// Una lectura del mismo código dentro de la espera se ignora; ultima: { texto, momento }
+export function esLecturaRepetida(texto, ahora, ultima, espera = 2000) {
+  return texto === ultima.texto && ahora - ultima.momento < espera
+}
+
+// Mensaje claro para cada error típico al abrir la cámara (los nombres vienen del navegador)
+export function mensajeErrorCamara(error) {
+  if (error?.name === 'NotAllowedError') return 'No se dio permiso para usar la cámara.'
+  if (error?.name === 'NotFoundError' || error?.name === 'OverconstrainedError') return 'No se encontró una cámara.'
+  if (error?.name === 'NotReadableError') return 'La cámara está ocupada por otra aplicación.'
+  return `No se pudo abrir la cámara: ${error?.message ?? 'error desconocido'}`
+}
