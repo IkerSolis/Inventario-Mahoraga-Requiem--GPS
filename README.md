@@ -23,15 +23,19 @@ Mientras no esté lista la API, la app funciona con **datos simulados**. En la b
 
 ## Scripts
 
-| Comando                | Qué hace                           |
-| ---------------------- | ---------------------------------- |
-| `npm run dev`          | Servidor de desarrollo             |
-| `npm run build`        | Compila para producción en `dist/` |
-| `npm run preview`      | Sirve lo compilado en `dist/`      |
-| `npm test`             | Corre las pruebas (Vitest)         |
-| `npm run lint`         | Revisa el código con ESLint        |
-| `npm run format`       | Da formato al código con Prettier  |
-| `npm run format:check` | Revisa el formato sin cambiar nada |
+| Comando                | Qué hace                                  |
+| ---------------------- | ----------------------------------------- |
+| `npm run dev`          | Servidor de desarrollo                    |
+| `npm run dev:red`      | Igual, con HTTPS y abierto a la red local |
+| `npm run build`        | Compila para producción en `dist/`        |
+| `npm run preview`      | Sirve lo compilado en `dist/`             |
+| `npm test`             | Corre las pruebas (Vitest)                |
+| `npm run lint`         | Revisa el código con ESLint               |
+| `npm run format`       | Da formato al código con Prettier         |
+| `npm run format:check` | Revisa el formato sin cambiar nada        |
+
+**Escáner con el teléfono:** corre `npm run dev:red`, abre en el teléfono (en el mismo Wi-Fi) la dirección
+"Network" que muestra la terminal y acepta la advertencia del certificado; la cámara solo funciona con HTTPS.
 
 ## Datos simulados o API real
 
@@ -54,12 +58,13 @@ src/
   components/     Componentes base reutilizables (Boton, Input, Tabla, Modal...)
   modulos/
     productos/    Catálogo, detalle, formulario y acciones de productos
-    escaner/      Escáner (en desarrollo)
+    escaner/      Escáner: lector USB, cámara o imagen; entradas, salidas y conteos
     inventario/   Inventario (pendiente)
   styles/         Tokens de diseño (colores, radios, fuente) y estilos globales
 ```
 
-En desarrollo, `/componentes` muestra todos los componentes base con ejemplos.
+En desarrollo, `/componentes` muestra todos los componentes base con ejemplos y `/codigos-prueba` muestra los
+códigos de barras de los productos simulados, para escanearlos desde la pantalla.
 
 ## Permisos
 
