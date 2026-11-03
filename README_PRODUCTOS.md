@@ -29,6 +29,16 @@ npm run dev
 | **DELETE**| `/api/products/:id` | `products.archive`| Archiva el producto (`status = 'archived'`). |
 | **PATCH** | `/api/products/:id/archive` | `products.archive`| Alias para archivar producto. |
 
+## Endpoints de Categorías (`/api/categories`)
+
+| Método | Endpoint | Permiso requerido | Descripción |
+| :--- | :--- | :--- | :--- |
+| **GET** | `/api/categories` | `products.read` | Lista categorías. Usa `?tree=true` para recibirlas anidadas como árbol jerárquico multinivel. |
+| **GET** | `/api/categories/:id` | `products.read` | Detalle de la categoría junto con su categoría padre y sus subcategorías hijas directas. |
+| **POST** | `/api/categories` | `products.create` | Crear categoría o subcategoría (asignando `parent_id`). Soporta `icon_name` y `color_hex`. |
+| **PUT** | `/api/categories/:id` | `products.update` | Modificar datos de la categoría (evita autorreferencias cíclicas). |
+| **DELETE**| `/api/categories/:id` | `products.update` | Elimina la categoría **únicamente si no tiene productos activos asociados** ni subcategorías. |
+
 > Puedes enviar los siguientes encabezados HTTP para simular negocio y permisos:
 > - `x-business-id: 1`
 > - `x-user-permissions: products.read,products.create,products.update,products.archive,costs.read`
