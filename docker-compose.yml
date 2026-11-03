@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mahoraga_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mahoraga_inventory
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mahoraga_backend
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgres://postgres:postgrespassword@postgres:5432/mahoraga_inventory
+      JWT_ACCESS_SECRET: mahoraga_jwt_access_secret_production_2026_super_secure
+      JWT_REFRESH_SECRET: mahoraga_jwt_refresh_secret_production_2026_super_secure
+      COOKIE_SECRET: mahoraga_cookie_secret_production_2026
+      CORS_ORIGIN: http://localhost:5173
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
+

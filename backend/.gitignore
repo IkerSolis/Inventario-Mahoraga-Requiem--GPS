@@ -1,0 +1,14 @@
+node_modules/
+.env
+data/*.sqlite
+data/*.sqlite-journal
+uploads/avatars/*
+uploads/logos/*
+!uploads/avatars/.gitkeep
+!uploads/logos/.gitkeep
+.DS_Store
+Thumbs.db
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
