@@ -1,0 +1,31 @@
+.productos-encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.productos-encabezado h1 {
+  margin: 0;
+}
+
+.productos-total {
+  margin: 0.25rem 0 0;
+  color: var(--color-texto-suave);
+}
+
+.productos-error {
+  color: color-mix(in srgb, var(--color-critico) 75%, black);
+}
+
+.producto-nombre {
+  font-weight: 600;
+}
+
+.producto-sku {
+  color: var(--color-texto-suave);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}

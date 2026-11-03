@@ -67,7 +67,15 @@ export const PERMISOS_POR_ROL = {
   ],
 }
 
-export function obtenerSesion(rol = 'R0') {
+// Hace las veces de la cookie de sesión: los otros mocks preguntan aquí qué puede el usuario actual
+let rolActual = 'R0'
+
+export function tienePermiso(permiso) {
+  return PERMISOS_POR_ROL[rolActual].includes(permiso)
+}
+
+export function obtenerSesion(rol = rolActual) {
+  rolActual = rol
   const sesion = {
     usuario: { nombre: 'Usuario de prueba' },
     rol,

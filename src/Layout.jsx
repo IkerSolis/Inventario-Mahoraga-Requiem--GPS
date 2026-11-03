@@ -43,7 +43,8 @@ export default function Layout() {
           )}
         </header>
         <main className="layout-principal">
-          <Outlet />
+          {/* key={rol}: al cambiar de rol la página se monta de nuevo y vuelve a pedir sus datos, como tras un nuevo inicio de sesión */}
+          <Outlet key={rol} />
         </main>
       </div>
     </div>
