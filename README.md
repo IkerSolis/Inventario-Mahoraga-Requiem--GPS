@@ -1,6 +1,9 @@
 # Inventario Mahoraga
 
-Sistema de inventario modular. Este repositorio contiene el frontend (React 18 + Vite).
+Sistema de inventario modular.
+
+- `frontend/`: la aplicación web (React 18 + Vite).
+- `backend/`: aquí irá el backend (Express), todavía no está en el repositorio.
 
 Bloque **Frontend 2**: Productos, Escáner e Inventario.
 
@@ -12,6 +15,7 @@ Bloque **Frontend 2**: Productos, Escáner e Inventario.
 ## Cómo correrlo
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
@@ -22,6 +26,8 @@ Mientras no esté lista la API, la app funciona con **datos simulados**. En la b
 **Rol de prueba** para ver la app como cualquier rol (R0–R7) y revisar qué se muestra u oculta según los permisos.
 
 ## Scripts
+
+Todos se corren dentro de `frontend/` (primero `cd frontend`).
 
 | Comando                | Qué hace                                  |
 | ---------------------- | ----------------------------------------- |
@@ -34,33 +40,35 @@ Mientras no esté lista la API, la app funciona con **datos simulados**. En la b
 | `npm run format`       | Da formato al código con Prettier         |
 | `npm run format:check` | Revisa el formato sin cambiar nada        |
 
-**Escáner con el teléfono:** corre `npm run dev:red`, abre en el teléfono (en el mismo Wi-Fi) la dirección
-"Network" que muestra la terminal y acepta la advertencia del certificado; la cámara solo funciona con HTTPS.
+**Escáner con el teléfono:** dentro de `frontend/` corre `npm run dev:red`, abre en el teléfono (en el mismo
+Wi-Fi) la dirección "Network" que muestra la terminal y acepta la advertencia del certificado; la cámara solo
+funciona con HTTPS.
 
 ## Datos simulados o API real
 
 La variable `VITE_USE_MOCK` decide de dónde salen los datos:
 
-- `true` (por defecto, en `.env.development`): datos simulados de `src/api/mock/`.
+- `true` (por defecto, en `frontend/.env.development`): datos simulados de `frontend/src/api/mock/`.
 - `false`: llamadas reales a `/api`.
 
-Para cambiarla solo en tu máquina, copia `.env.example` como `.env.local` y edítalo.
+Para cambiarla solo en tu máquina, copia `frontend/.env.example` como `frontend/.env.local` y edítalo.
 
 Los formatos de respuesta que espera el frontend están anotados como **contrato provisional** al inicio de cada
-archivo de `src/api/` (por ejemplo `src/api/productos.js`), para revisarlos con Backend 2.
+archivo de `frontend/src/api/` (por ejemplo `frontend/src/api/productos.js`), para revisarlos con Backend 2.
 
 ## Estructura
 
 ```
-src/
-  api/            Funciones para hablar con el backend; mock/ tiene los datos simulados
-  auth/           Sesión del usuario y usePuede() para revisar permisos
-  components/     Componentes base reutilizables (Boton, Input, Tabla, Modal...)
-  modulos/
-    productos/    Catálogo, detalle, formulario y acciones de productos
-    escaner/      Escáner: lector USB, cámara o imagen; entradas, salidas y conteos
-    inventario/   Inventario (pendiente)
-  styles/         Tokens de diseño (colores, radios, fuente) y estilos globales
+frontend/
+  src/
+    api/            Funciones para hablar con el backend; mock/ tiene los datos simulados
+    auth/           Sesión del usuario y usePuede() para revisar permisos
+    components/     Componentes base reutilizables (Boton, Input, Tabla, Modal...)
+    modulos/
+      productos/    Catálogo, detalle, formulario y acciones de productos
+      escaner/      Escáner: lector USB, cámara o imagen; entradas, salidas y conteos
+      inventario/   Inventario (pendiente)
+    styles/         Tokens de diseño (colores, radios, fuente) y estilos globales
 ```
 
 En desarrollo, `/componentes` muestra todos los componentes base con ejemplos y `/codigos-prueba` muestra los
