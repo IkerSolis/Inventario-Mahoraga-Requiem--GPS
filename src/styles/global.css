@@ -20,3 +20,9 @@ table {
 a {
   color: var(--color-primario);
 }
+
+/* Contorno visible al navegar con teclado, igual para todos los controles */
+:focus-visible {
+  outline: 2px solid var(--color-primario);
+  outline-offset: 2px;
+}

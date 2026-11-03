@@ -1,0 +1,38 @@
+.modal {
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+  color: var(--color-texto);
+  box-shadow: 0 20px 40px rgb(15 23 42 / 0.2);
+}
+
+.modal::backdrop {
+  background: rgb(15 23 42 / 0.45);
+}
+
+.modal-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.modal-encabezado h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.modal-cuerpo {
+  padding: 1.25rem;
+}
+
+.modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--color-borde);
+}

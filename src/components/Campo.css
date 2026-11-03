@@ -1,0 +1,37 @@
+/* Estilos compartidos por Input y Select */
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.campo label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.campo-control {
+  min-height: 2.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-control);
+  background: var(--color-superficie);
+  color: inherit;
+  font: inherit;
+}
+
+.campo-control[aria-invalid='true'] {
+  border-color: var(--color-critico);
+}
+
+.campo-error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--color-critico) 75%, black);
+}
+
+@media (max-width: 720px) {
+  .campo-control {
+    min-height: 44px;
+  }
+}
