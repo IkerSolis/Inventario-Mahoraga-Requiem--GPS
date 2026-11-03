@@ -1,4 +1,5 @@
 // Simula los endpoints de productos con datos en memoria.
+import { esperar } from './esperar.js'
 import { tienePermiso } from './sesion.js'
 
 const base = [
@@ -44,10 +45,6 @@ const productos = Array.from({ length: 48 }, (_, i) => {
   }
 })
 
-function esperar(datos) {
-  return new Promise((resolver) => setTimeout(() => resolver(datos), 300))
-}
-
 // Igual que el servidor: sin costs.read el costo no viaja en la respuesta
 function quitarCostoSiNoPuede(producto) {
   if (tienePermiso('costs.read')) return producto
@@ -55,10 +52,29 @@ function quitarCostoSiNoPuede(producto) {
   return sinCosto
 }
 
-export function listarProductos({ pagina = 1, porPagina = 25 } = {}) {
+// Minúsculas y sin acentos, para que "cinturon" encuentre "Cinturón"
+function normalizar(texto) {
+  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
+// Los filtros vacíos ('' o undefined) no filtran nada
+export function listarProductos({ pagina = 1, porPagina = 25, busqueda, categoria, estadoStock } = {}) {
+  const texto = normalizar(busqueda ?? '').trim()
+  const filtrados = productos.filter(
+    (p) =>
+      (!texto || normalizar(p.nombre).includes(texto) || normalizar(p.sku).includes(texto)) &&
+      (!categoria || p.categoria === categoria) &&
+      (!estadoStock || p.estadoStock === estadoStock),
+  )
+
   const inicio = (pagina - 1) * porPagina
   return esperar({
-    elementos: productos.slice(inicio, inicio + porPagina).map(quitarCostoSiNoPuede),
-    total: productos.length,
+    elementos: filtrados.slice(inicio, inicio + porPagina).map(quitarCostoSiNoPuede),
+    total: filtrados.length,
   })
+}
+
+export function listarCategorias() {
+  const nombres = new Set(productos.map((p) => p.categoria))
+  return esperar([...nombres].sort())
 }

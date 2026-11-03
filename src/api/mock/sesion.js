@@ -3,6 +3,7 @@
 //   R2 costs.read · R3 stock.adjust.approve, audit.read · R4 stock.receive, stock.issue, stock.transfer
 //   R5 stock.receive, costs.read · R6 stock.issue, stock.transfer, prices.manage · R7 audit.read
 // Para probar uno, agrégalo al arreglo del rol.
+import { esperar } from './esperar.js'
 
 export const ROLES = [
   { codigo: 'R0', nombre: 'Propietario' },
@@ -76,11 +77,9 @@ export function tienePermiso(permiso) {
 
 export function obtenerSesion(rol = rolActual) {
   rolActual = rol
-  const sesion = {
+  return esperar({
     usuario: { nombre: 'Usuario de prueba' },
     rol,
     permisos: PERMISOS_POR_ROL[rol],
-  }
-  // Pequeña espera para que se note el estado de carga, como con un servidor real
-  return new Promise((resolver) => setTimeout(() => resolver(sesion), 300))
+  })
 }

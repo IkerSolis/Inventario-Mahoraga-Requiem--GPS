@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
-import { listarProductos } from '../../api/productos.js'
+import { useEffect, useRef, useState } from 'react'
+import { listarCategorias, listarProductos } from '../../api/productos.js'
 import { usePuede } from '../../auth/usePuede.js'
 import Badge from '../../components/Badge.jsx'
 import Boton from '../../components/Boton.jsx'
+import Input from '../../components/Input.jsx'
 import Paginacion from '../../components/Paginacion.jsx'
+import Select from '../../components/Select.jsx'
 import Tabla from '../../components/Tabla.jsx'
 import './ProductosPage.css'
 
@@ -24,12 +26,56 @@ export default function ProductosPage() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
 
+  // Filtros. "texto" es lo que se escribe; "busqueda" es lo que se manda, 300 ms después de dejar de escribir
+  const [texto, setTexto] = useState('')
+  const [busqueda, setBusqueda] = useState('')
+  const [categoria, setCategoria] = useState('')
+  const [estadoStock, setEstadoStock] = useState('')
+  const [categorias, setCategorias] = useState([])
+  const buscador = useRef(null)
+  const hayFiltros = Boolean(busqueda || categoria || estadoStock)
+
   useEffect(() => {
-    // Si cambian de página rápido, ignoramos la respuesta vieja que llegue tarde
+    const espera = setTimeout(() => {
+      setBusqueda(texto.trim())
+      setPagina(1)
+    }, 300)
+    return () => clearTimeout(espera)
+  }, [texto])
+
+  // Atajo Ctrl + / (Cmd + / en Mac) para ir al buscador.
+  // También "/" sola, pero solo si no se está escribiendo en otro campo.
+  useEffect(() => {
+    function alPresionarTecla(e) {
+      const escribiendo = ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)
+      if (e.key === '/' && (e.ctrlKey || e.metaKey || !escribiendo)) {
+        e.preventDefault()
+        buscador.current.focus()
+      }
+    }
+    window.addEventListener('keydown', alPresionarTecla)
+    return () => window.removeEventListener('keydown', alPresionarTecla)
+  }, [])
+
+  useEffect(() => {
+    // Si fallan las categorías, el filtro solo muestra "Todas" y la tabla sigue funcionando
+    listarCategorias().then(setCategorias).catch(() => setCategorias([]))
+  }, [])
+
+  function limpiarFiltros() {
+    setTexto('')
+    setBusqueda('')
+    setCategoria('')
+    setEstadoStock('')
+    setPagina(1)
+  }
+
+  useEffect(() => {
+    // Si cambian de página o de filtro rápido, ignoramos la respuesta vieja que llegue tarde
     let vigente = true
     setCargando(true)
     setError(null)
-    listarProductos({ pagina, porPagina })
+    listarProductos({ pagina, porPagina, busqueda, categoria, estadoStock })
       .then((respuesta) => {
         if (vigente) setDatos(respuesta)
       })
@@ -42,7 +88,7 @@ export default function ProductosPage() {
     return () => {
       vigente = false
     }
-  }, [pagina, porPagina])
+  }, [pagina, porPagina, busqueda, categoria, estadoStock])
 
   const columnas = [
     {
@@ -90,7 +136,11 @@ export default function ProductosPage() {
       <header className="productos-encabezado">
         <div>
           <h1>Catálogo de productos</h1>
-          {datos && <p className="productos-total cifra">{datos.total.toLocaleString('es-MX')} productos</p>}
+          {datos && (
+            <p className="productos-total cifra">
+              {datos.total.toLocaleString('es-MX')} {datos.total === 1 ? 'producto' : 'productos'}
+            </p>
+          )}
         </div>
         <Boton
           variante="secundario"
@@ -102,7 +152,71 @@ export default function ProductosPage() {
         </Boton>
       </header>
 
-      {error && <p role="alert" className="productos-error">No se pudieron cargar los productos: {error}</p>}
+      <div className="productos-filtros">
+        <div className="productos-filtros-fila">
+          <div className="productos-buscador">
+            <Input
+              ref={buscador}
+              type="search"
+              etiqueta={<>Buscar <kbd>Ctrl + /</kbd></>}
+              placeholder="Nombre o SKU"
+              aria-keyshortcuts="Control+/"
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+            />
+          </div>
+          <Select
+            etiqueta="Categoría"
+            value={categoria}
+            onChange={(e) => {
+              setCategoria(e.target.value)
+              setPagina(1)
+            }}
+          >
+            <option value="">Todas</option>
+            {categorias.map((nombre) => (
+              <option key={nombre} value={nombre}>{nombre}</option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="productos-filtros-fila">
+          <div className="productos-chips" role="group" aria-label="Estado de stock">
+            <button
+              type="button"
+              className="productos-chip"
+              aria-pressed={estadoStock === ''}
+              onClick={() => {
+                setEstadoStock('')
+                setPagina(1)
+              }}
+            >
+              Todos
+            </button>
+            {Object.entries(ESTADOS_STOCK).map(([valor, estado]) => (
+              <button
+                key={valor}
+                type="button"
+                className={`productos-chip productos-chip-${estado.tono}`}
+                aria-pressed={estadoStock === valor}
+                onClick={() => {
+                  setEstadoStock(valor)
+                  setPagina(1)
+                }}
+              >
+                {estado.texto}
+              </button>
+            ))}
+          </div>
+          {hayFiltros && (
+            <Boton variante="secundario" icono="filter_alt_off" onClick={limpiarFiltros}>
+              Limpiar filtros
+            </Boton>
+          )}
+        </div>
+      </div>
+
+      {error &&<p role="alert" className="productos-error">No se pudieron cargar los productos: {error}</p>}
       {cargando && !datos && <p>Cargando productos…</p>}
 
       {datos && (
@@ -111,7 +225,7 @@ export default function ProductosPage() {
             columnas={columnas}
             filas={datos.elementos}
             compacta={compacta}
-            mensajeVacio="No hay productos registrados."
+            mensajeVacio={hayFiltros ? 'Ningún producto coincide con los filtros.' : 'No hay productos registrados.'}
           />
           <Paginacion
             pagina={pagina}
