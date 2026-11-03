@@ -13,6 +13,7 @@ import PrecioVenta from './PrecioVenta.jsx'
 import ProductoImagen from './ProductoImagen.jsx'
 import ProductoModal from './ProductoModal.jsx'
 import ProductoTarjetas from './ProductoTarjetas.jsx'
+import { resumirLote } from './productoLote.js'
 import { ESTADOS_STOCK, formatoDinero } from './productoFormato.js'
 import './productos.css'
 import './ProductosPage.css'
@@ -31,9 +32,14 @@ export default function ProductosPage() {
   const verArchivados = parametros.get('archivados') === '1'
   const vista = parametros.get('vista') === 'tarjetas' ? 'tarjetas' : 'lista'
 
+  // ids de los productos marcados para acciones en lote. Solo se seleccionan productos de la página visible.
+  const [seleccionados, setSeleccionados] = useState([])
+
   // Cambia varios parámetros de la URL a la vez. Los vacíos se quitan para que la URL quede limpia.
   // replace: true para no llenar el historial con cada filtro; "atrás" regresa a la página anterior.
+  // Al cambiar de página, filtro o vista se limpia la selección, para no actuar sobre productos que no se ven.
   function cambiarParametros(cambios) {
+    setSeleccionados([])
     setParametros(
       (actuales) => {
         const nuevos = new URLSearchParams(actuales)
@@ -59,8 +65,8 @@ export default function ProductosPage() {
 
   // edicion: null = modal cerrado; { idProducto: null } = crear; { idProducto } = editar
   const [edicion, setEdicion] = useState(null)
-  const [porArchivar, setPorArchivar] = useState(null) // producto que espera confirmación para archivarse
-  const [restaurando, setRestaurando] = useState(null) // id del producto que se está restaurando
+  const [porArchivar, setPorArchivar] = useState(null) // productos (uno o varios) que esperan confirmación
+  const [restaurando, setRestaurando] = useState([]) // ids de los productos que se están restaurando
   const [aviso, setAviso] = useState(null) // { tipo: 'exito' | 'error', texto }
   const [recargas, setRecargas] = useState(0)
 
@@ -132,22 +138,20 @@ export default function ProductosPage() {
   function alTerminar(mensaje, tipo = 'exito') {
     setEdicion(null)
     setPorArchivar(null)
+    setSeleccionados([])
     setAviso({ tipo, texto: mensaje })
     setRecargas((n) => n + 1)
   }
 
-  // Restaurar no pide confirmación porque no quita nada: solo regresa el producto a la lista
-  async function restaurar(producto) {
+  // Restaurar (uno o varios) no pide confirmación porque no quita nada: solo regresa los productos a la lista
+  async function restaurar(productos) {
     setAviso(null)
-    setRestaurando(producto.id)
-    try {
-      await restaurarProducto(producto.id)
-      alTerminar(`${producto.nombre} se restauró.`)
-    } catch (e) {
-      setAviso({ tipo: 'error', texto: `No se pudo restaurar: ${e.message}` })
-    } finally {
-      setRestaurando(null)
-    }
+    setRestaurando(productos.map((p) => p.id))
+    const resultados = await Promise.allSettled(productos.map((p) => restaurarProducto(p.id)))
+    const aviso = resumirLote(productos, resultados, { uno: 'se restauró', participio: 'restaurado' })
+    setRestaurando([])
+    if (aviso.tipo === 'error') setAviso(aviso)
+    else alTerminar(aviso.texto, aviso.tipo)
   }
 
   // En archivados la única acción es restaurar; en activos, editar y archivar
@@ -155,11 +159,15 @@ export default function ProductosPage() {
     ? puede('products.archive')
     : puede('products.update') || puede('products.archive')
 
+  // Las acciones en lote (archivar / restaurar varios) son de products.archive y solo están en la vista de lista
+  const puedeSeleccionar = puede('products.archive') && vista === 'lista'
+  const productosSeleccionados = datos ? datos.elementos.filter((p) => seleccionados.includes(p.id)) : []
+
   // Botones de cada producto; los usan igual la tabla y las tarjetas
   function renderAcciones(p) {
     if (verArchivados) {
       return (
-        <Boton variante="secundario" icono="unarchive" cargando={restaurando === p.id} onClick={() => restaurar(p)}>
+        <Boton variante="secundario" icono="unarchive" cargando={restaurando.includes(p.id)} onClick={() => restaurar([p])}>
           Restaurar
         </Boton>
       )
@@ -176,7 +184,7 @@ export default function ProductosPage() {
             aria-label={`Archivar ${p.nombre}`}
             onClick={() => {
               setAviso(null)
-              setPorArchivar(p)
+              setPorArchivar([p])
             }}
           />
         )}
@@ -380,7 +388,46 @@ export default function ProductosPage() {
               mensajeVacio={mensajeVacio}
             />
           ) : (
-            <Tabla columnas={columnas} filas={datos.elementos} compacta={compacta} mensajeVacio={mensajeVacio} />
+            <>
+              {productosSeleccionados.length > 0 && (
+                <div className="productos-lote" role="region" aria-label="Acciones en lote">
+                  <span className="cifra">
+                    {productosSeleccionados.length}{' '}
+                    {productosSeleccionados.length === 1 ? 'seleccionado' : 'seleccionados'}
+                  </span>
+                  {verArchivados ? (
+                    <Boton
+                      icono="unarchive"
+                      cargando={restaurando.length > 0}
+                      onClick={() => restaurar(productosSeleccionados)}
+                    >
+                      Restaurar seleccionados
+                    </Boton>
+                  ) : (
+                    <Boton
+                      variante="peligro"
+                      icono="archive"
+                      onClick={() => {
+                        setAviso(null)
+                        setPorArchivar(productosSeleccionados)
+                      }}
+                    >
+                      Archivar seleccionados
+                    </Boton>
+                  )}
+                  <Boton variante="secundario" onClick={() => setSeleccionados([])}>Quitar selección</Boton>
+                </div>
+              )}
+              <Tabla
+                columnas={columnas}
+                filas={datos.elementos}
+                compacta={compacta}
+                mensajeVacio={mensajeVacio}
+                seleccionadas={seleccionados}
+                onCambiarSeleccion={puedeSeleccionar ? setSeleccionados : undefined}
+                etiquetaSeleccion={(p) => `Seleccionar ${p.nombre}`}
+              />
+            </>
           )}
           <Paginacion
             pagina={pagina}
@@ -403,7 +450,7 @@ export default function ProductosPage() {
 
       {porArchivar && (
         <ArchivarProductoModal
-          producto={porArchivar}
+          productos={porArchivar}
           onCerrar={() => setPorArchivar(null)}
           onArchivado={alTerminar}
         />

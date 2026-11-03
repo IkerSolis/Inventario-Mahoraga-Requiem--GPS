@@ -17,6 +17,20 @@
   gap: 0.5rem;
 }
 
+/* Barra que aparece sobre la tabla cuando hay productos seleccionados */
+.productos-lote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--color-primario);
+  border-radius: var(--radio-control);
+  background: var(--color-primario-suave);
+  font-weight: 500;
+}
+
 .productos-vista {
   display: flex;
   gap: 0.25rem;

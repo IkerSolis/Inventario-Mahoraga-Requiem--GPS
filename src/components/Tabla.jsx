@@ -4,6 +4,7 @@ import './Tabla.css'
 // columnas: [{ clave, titulo, render?: (fila) => contenido, alinear?: 'derecha' }]
 // filas: arreglo de objetos; claveFila es el campo único de cada fila (por defecto 'id')
 // Selección (opcional): pasar seleccionadas (arreglo de ids) y onCambiarSeleccion(nuevosIds)
+// etiquetaSeleccion: texto de la casilla de cada fila para lectores de pantalla, ej. (fila) => `Seleccionar ${fila.nombre}`
 export default function Tabla({
   columnas,
   filas,
@@ -11,6 +12,7 @@ export default function Tabla({
   compacta = false,
   seleccionadas = [],
   onCambiarSeleccion,
+  etiquetaSeleccion = (fila) => `Seleccionar fila ${fila[claveFila]}`,
   mensajeVacio = 'No hay datos para mostrar.',
 }) {
   const conSeleccion = Boolean(onCambiarSeleccion)
@@ -66,7 +68,7 @@ export default function Tabla({
                   <td className="tabla-casilla">
                     <input
                       type="checkbox"
-                      aria-label={`Seleccionar fila ${id}`}
+                      aria-label={etiquetaSeleccion(fila)}
                       checked={seleccionada}
                       onChange={() => onCambiarSeleccion(alternarFila(seleccionadas, id))}
                     />
