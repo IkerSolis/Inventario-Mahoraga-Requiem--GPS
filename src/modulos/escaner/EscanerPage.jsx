@@ -21,6 +21,7 @@ import ImagenEscaner from './ImagenEscaner.jsx'
 import ManifiestoSesion from './ManifiestoSesion.jsx'
 import VistaCamara from './VistaCamara.jsx'
 import { hayCamaraDisponible } from './lectorZxing.js'
+import { sonar } from './sonido.js'
 import './EscanerPage.css'
 
 const CLAVE_MANIFIESTO = 'escaner-manifiesto'
@@ -29,6 +30,16 @@ const MAXIMO_MANIFIESTO = 200 // para no llenar el almacenamiento en una sesión
 // Pantalla táctil sin mouse (teléfono o tableta)
 function esPantallaTactil() {
   return window.matchMedia?.('(pointer: coarse)').matches ?? false
+}
+
+const CLAVE_OPCIONES = 'escaner-opciones'
+
+function cargarOpciones() {
+  try {
+    return { sonido: true, autoEnvio: false, ...JSON.parse(localStorage.getItem(CLAVE_OPCIONES)) }
+  } catch {
+    return { sonido: true, autoEnvio: false }
+  }
 }
 
 function cargarManifiesto() {
@@ -68,9 +79,27 @@ export default function EscanerPage() {
   const lector = useRef(null)
   // Número de la última búsqueda: si llegan dos lecturas seguidas, se ignora la respuesta de la vieja
   const ultimaBusqueda = useRef(0)
-  // Evita mandar dos veces la misma confirmación si presionan Ctrl+Enter muy rápido (antes de que React repinte)
-  const enviando = useRef(false)
+  // Claves de las confirmaciones que van en camino. Evita mandar dos veces la misma lectura si presionan
+  // Ctrl+Enter muy rápido (antes de que React repinte), sin bloquear lecturas distintas en auto-envío.
+  const enviando = useRef(new Set())
   const [camaraAbierta, setCamaraAbierta] = useState(false)
+  const [opciones, setOpciones] = useState(cargarOpciones) // { sonido, autoEnvio }
+
+  // Las opciones son una preferencia de cada usuario en su navegador: se guardan en localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(CLAVE_OPCIONES, JSON.stringify(opciones))
+    } catch {
+      // Sin almacenamiento: las opciones vuelven a su valor inicial al recargar
+    }
+  }, [opciones])
+
+  // En auditoría se escribe lo contado, así que no tiene sentido registrar 1 automáticamente en cada lectura
+  const autoEnvioActivo = opciones.autoEnvio && modo?.tipoMovimiento !== 'conteo'
+
+  function pitar(tipo) {
+    if (opciones.sonido) sonar(tipo)
+  }
 
   // En teléfono no se devuelve el foco al campo: no hay lector USB y abriría el teclado en cada lectura
   function enfocarLector() {
@@ -123,36 +152,46 @@ export default function EscanerPage() {
     enfocarLector()
   }
 
-  async function confirmar() {
+  // objetivo: la lectura a confirmar. Normalmente la de la pantalla; con auto-envío, la recién leída.
+  async function confirmar(objetivo = lectura) {
     const tipo = modo.tipoMovimiento
-    const { producto } = lectura
-    if (enviando.current || validarCantidad(tipo, lectura.cantidad, producto.existencias)) return
+    const { producto } = objetivo
+    if (enviando.current.has(objetivo.clave)) return
+    const problema = validarCantidad(tipo, objetivo.cantidad, producto.existencias)
+    if (problema) {
+      // Con el botón no llega aquí (está deshabilitado); con auto-envío sí, por ejemplo una salida sin stock.
+      // El mensaje ya se ve bajo la cantidad (la lectura queda en pantalla), así que solo suena el error.
+      pitar('error')
+      return
+    }
 
-    enviando.current = true
+    enviando.current.add(objetivo.clave)
     setConfirmando(true)
     setErrorMovimiento(null)
     try {
       const datos = {
         tipo,
         productoId: producto.id,
-        cantidad: Number(lectura.cantidad),
-        pasillo: lectura.pasillo.trim(),
-        rack: lectura.rack.trim(),
-        gaveta: lectura.gaveta.trim(),
+        cantidad: Number(objetivo.cantidad),
+        pasillo: objetivo.pasillo.trim(),
+        rack: objetivo.rack.trim(),
+        gaveta: objetivo.gaveta.trim(),
         documento: documento.trim(),
       }
-      const { movimiento } = await registrarMovimiento(datos, lectura.clave)
+      const { movimiento } = await registrarMovimiento(datos, objetivo.clave)
       setUltimoMovimiento(resumenMovimiento(movimiento, producto.nombre))
-      const registro = { ...movimiento, nombre: producto.nombre, sku: producto.sku, clave: lectura.clave }
+      const registro = { ...movimiento, nombre: producto.nombre, sku: producto.sku, clave: objetivo.clave }
       setManifiesto((anterior) => [registro, ...anterior].slice(0, MAXIMO_MANIFIESTO))
       setLectura(null)
+      pitar('ok')
       enfocarLector()
     } catch (e) {
       // La lectura se queda con la misma clave: si se reintenta, el servidor no la duplica
       setErrorMovimiento(e.message)
+      pitar('error')
     } finally {
-      enviando.current = false
-      setConfirmando(false)
+      enviando.current.delete(objetivo.clave)
+      setConfirmando(enviando.current.size > 0)
     }
   }
 
@@ -167,22 +206,32 @@ export default function EscanerPage() {
   async function leer(codigo) {
     setErrorLectura(null)
     setUltimoMovimiento(null)
-    if (lectura && esMismoProducto(codigo, lectura.producto)) {
+    // Con auto-envío cada lectura se registra sola, así que no se suma a la lectura en pantalla
+    if (!autoEnvioActivo && lectura && esMismoProducto(codigo, lectura.producto)) {
       cambiarLectura({ cantidad: sumarCantidad(lectura.cantidad, 1) })
+      pitar('ok')
       return
     }
 
     const numero = ++ultimaBusqueda.current
+    // En modo manual solo importa la última lectura (la que se ve); con auto-envío cada lectura es una pieza
+    // y ninguna se puede descartar, aunque lleguen varias antes de que responda la primera
+    const esVieja = () => !autoEnvioActivo && numero !== ultimaBusqueda.current
     setBuscando(true)
     try {
       const producto = await buscarProductoPorCodigo(codigo)
-      if (numero !== ultimaBusqueda.current) return
-      setLectura(nuevaLectura(producto))
+      if (esVieja()) return
+      const nueva = nuevaLectura(producto)
+      setLectura(nueva)
       setErrorMovimiento(null)
+      // Auto-envío: registra 1 pieza en cuanto se lee (el pitido lo da la confirmación)
+      if (autoEnvioActivo) confirmar(nueva)
+      else pitar('ok')
     } catch (e) {
-      if (numero !== ultimaBusqueda.current) return
+      if (esVieja()) return
       setLectura(null)
       setErrorLectura(e.estado === 404 ? `No existe un producto con el código ${codigo}` : e.message)
+      pitar('error')
     } finally {
       if (numero === ultimaBusqueda.current) setBuscando(false)
       enfocarLector()
@@ -260,6 +309,32 @@ export default function EscanerPage() {
 
       <div className="escaner-cuerpo">
         <div className="escaner-panel">
+          <div className="escaner-opciones">
+            <label>
+              <input
+                type="checkbox"
+                checked={opciones.sonido}
+                onChange={(e) => setOpciones({ ...opciones, sonido: e.target.checked })}
+              />
+              Sonido
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={opciones.autoEnvio}
+                disabled={modo.tipoMovimiento === 'conteo'}
+                aria-describedby="ayuda-auto-envio"
+                onChange={(e) => setOpciones({ ...opciones, autoEnvio: e.target.checked })}
+              />
+              Auto-envío
+            </label>
+            <span id="ayuda-auto-envio" className="escaner-opciones-ayuda">
+              {modo.tipoMovimiento === 'conteo'
+                ? 'No disponible en auditoría: ahí se escribe lo contado.'
+                : 'Registra 1 pieza en cuanto se lee el código, sin confirmar.'}
+            </span>
+          </div>
+
           <LectorCodigo ref={lector} onLeer={leer} buscando={buscando} autoEnfocar={!esPantallaTactil()} />
 
           <div className="escaner-alternativas">
@@ -298,7 +373,7 @@ export default function EscanerPage() {
                 onCambiar={cambiarLectura}
                 onSumar={sumar}
                 onCambiarDocumento={setDocumento}
-                onConfirmar={confirmar}
+                onConfirmar={() => confirmar()}
               />
             </>
           ) : (
