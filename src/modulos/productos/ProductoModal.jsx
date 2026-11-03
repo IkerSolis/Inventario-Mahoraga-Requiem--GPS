@@ -152,7 +152,9 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
       titulo={esNuevo ? 'Nuevo producto' : `Editar producto${producto ? ` · ${producto.sku}` : ''}`}
       acciones={
         <>
-          <Boton variante="secundario" onClick={onCerrar}>Cancelar</Boton>
+          <Boton variante="secundario" onClick={onCerrar}>
+            Cancelar
+          </Boton>
           <Boton type="submit" form={idFormulario} cargando={guardando} disabled={cargando || Boolean(errorCarga)}>
             {esNuevo ? 'Crear producto' : 'Guardar cambios'}
           </Boton>
@@ -161,14 +163,18 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
     >
       {cargando && <p>Cargando producto…</p>}
       {errorCarga && (
-        <p role="alert" className="productos-aviso productos-aviso-error">No se pudo cargar el producto: {errorCarga}</p>
+        <p role="alert" className="productos-aviso productos-aviso-error">
+          No se pudo cargar el producto: {errorCarga}
+        </p>
       )}
 
       {/* noValidate: los mensajes los da Zod, no el navegador */}
       {!cargando && !errorCarga && (
         <form id={idFormulario} className="producto-form" onSubmit={guardar} noValidate>
           {hayErrores && (
-            <p role="alert" className="productos-aviso productos-aviso-error producto-form-completo">Revisa los campos marcados.</p>
+            <p role="alert" className="productos-aviso productos-aviso-error producto-form-completo">
+              Revisa los campos marcados.
+            </p>
           )}
           {errorServidor && (
             <p role="alert" className="productos-aviso productos-aviso-error producto-form-completo">
@@ -198,14 +204,18 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
           <Select etiqueta="Categoría" {...campo('categoria')}>
             <option value="">Elige una categoría</option>
             {opcionesCategoria.map((nombre) => (
-              <option key={nombre} value={nombre}>{nombre}</option>
+              <option key={nombre} value={nombre}>
+                {nombre}
+              </option>
             ))}
           </Select>
           <Input etiqueta="Marca (opcional)" maxLength={60} {...campo('marca')} />
 
           <Select etiqueta="Unidad" {...campo('unidad')}>
             {UNIDADES.map((unidad) => (
-              <option key={unidad} value={unidad}>{unidad}</option>
+              <option key={unidad} value={unidad}>
+                {unidad}
+              </option>
             ))}
           </Select>
           <Input etiqueta="Stock mínimo" type="number" min={0} step={1} inputMode="numeric" {...campo('stockMinimo')} />

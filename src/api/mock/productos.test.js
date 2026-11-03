@@ -26,7 +26,11 @@ describe('mock de productos', () => {
   })
 
   test('los filtros se combinan y el total cuenta solo lo filtrado', async () => {
-    const { elementos, total } = await listarProductos({ categoria: 'Calzado', estadoStock: 'disponible', porPagina: 100 })
+    const { elementos, total } = await listarProductos({
+      categoria: 'Calzado',
+      estadoStock: 'disponible',
+      porPagina: 100,
+    })
     expect(total).toBe(elementos.length)
     expect(elementos.every((p) => p.categoria === 'Calzado' && p.estadoStock === 'disponible')).toBe(true)
   })
@@ -40,8 +44,17 @@ describe('mock de productos', () => {
 
 describe('mock de crear y actualizar', () => {
   const datos = {
-    nombre: 'Producto nuevo', descripcion: '', categoria: 'Calzado', marca: '', unidad: 'par',
-    precioCompra: 50, precioVenta: 120, stockMinimo: 5, pasillo: '1', rack: 'A', gaveta: '1',
+    nombre: 'Producto nuevo',
+    descripcion: '',
+    categoria: 'Calzado',
+    marca: '',
+    unidad: 'par',
+    precioCompra: 50,
+    precioVenta: 120,
+    stockMinimo: 5,
+    pasillo: '1',
+    rack: 'A',
+    gaveta: '1',
   }
 
   test('sin products.create se rechaza', async () => {

@@ -20,7 +20,9 @@ export default function Layout() {
         <strong className="layout-marca">Mahoraga</strong>
         {enlaces.map((enlace) => (
           <NavLink key={enlace.ruta} to={enlace.ruta} className="layout-enlace">
-            <span className="material-symbols-outlined" aria-hidden="true">{enlace.icono}</span>
+            <span className="material-symbols-outlined" aria-hidden="true">
+              {enlace.icono}
+            </span>
             {enlace.texto}
           </NavLink>
         ))}

@@ -21,9 +21,19 @@ const columnasDemo = [
     clave: 'estado',
     titulo: 'Estado',
     render: (fila) =>
-      fila.cantidad === 0 ? <Badge tono="neutro" punto>Agotado</Badge>
-        : fila.cantidad < 20 ? <Badge tono="critico" punto>Crítico</Badge>
-          : <Badge tono="optimo" punto>Óptimo</Badge>,
+      fila.cantidad === 0 ? (
+        <Badge tono="neutro" punto>
+          Agotado
+        </Badge>
+      ) : fila.cantidad < 20 ? (
+        <Badge tono="critico" punto>
+          Crítico
+        </Badge>
+      ) : (
+        <Badge tono="optimo" punto>
+          Óptimo
+        </Badge>
+      ),
   },
 ]
 
@@ -45,7 +55,9 @@ export default function ComponentesDemo() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
           <Boton icono="add">Primario</Boton>
           <Boton variante="secundario">Secundario</Boton>
-          <Boton variante="peligro" icono="delete">Peligro</Boton>
+          <Boton variante="peligro" icono="delete">
+            Peligro
+          </Boton>
           <Boton cargando>Guardando</Boton>
           <Boton disabled>Deshabilitado</Boton>
           <Boton variante="secundario" icono="edit" aria-label="Editar" />
@@ -67,10 +79,18 @@ export default function ComponentesDemo() {
       <section>
         <h2>Badge</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <Badge tono="optimo" punto>Óptimo</Badge>
-          <Badge tono="alerta" punto>Stock bajo</Badge>
-          <Badge tono="critico" punto>Crítico</Badge>
-          <Badge tono="neutro" punto>Agotado</Badge>
+          <Badge tono="optimo" punto>
+            Óptimo
+          </Badge>
+          <Badge tono="alerta" punto>
+            Stock bajo
+          </Badge>
+          <Badge tono="critico" punto>
+            Crítico
+          </Badge>
+          <Badge tono="neutro" punto>
+            Agotado
+          </Badge>
           <Badge tono="info">Categoría</Badge>
         </div>
       </section>
@@ -112,7 +132,9 @@ export default function ComponentesDemo() {
           titulo="Ejemplo de modal"
           acciones={
             <>
-              <Boton variante="secundario" onClick={() => setModalAbierto(false)}>Cancelar</Boton>
+              <Boton variante="secundario" onClick={() => setModalAbierto(false)}>
+                Cancelar
+              </Boton>
               <Boton onClick={() => setModalAbierto(false)}>Aceptar</Boton>
             </>
           }

@@ -59,9 +59,6 @@ export default function ProductosPage() {
   }
 
   const [compacta, setCompacta] = useState(false)
-  const [datos, setDatos] = useState(null)
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState(null)
 
   // edicion: null = modal cerrado; { idProducto: null } = crear; { idProducto } = editar
   const [edicion, setEdicion] = useState(null)
@@ -82,7 +79,9 @@ export default function ProductosPage() {
       if (texto.trim() !== (parametros.get('q') ?? '')) cambiarFiltros({ q: texto.trim() })
     }, 300)
     return () => clearTimeout(espera)
-  }, [texto]) // solo reacciona a lo que se escribe
+    // Debe reaccionar solo a lo que se escribe; con más dependencias la espera se reiniciaría en cada render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [texto])
 
   // Atajo Ctrl + / (Cmd + / en Mac) para ir al buscador.
   // También "/" sola, pero solo si no se está escribiendo en otro campo.
@@ -100,7 +99,9 @@ export default function ProductosPage() {
 
   useEffect(() => {
     // Si fallan las categorías, el filtro solo muestra "Todas" y la tabla sigue funcionando
-    listarCategorias().then(setCategorias).catch(() => setCategorias([]))
+    listarCategorias()
+      .then(setCategorias)
+      .catch(() => setCategorias([]))
   }, [])
 
   function limpiarFiltros() {
@@ -108,25 +109,29 @@ export default function ProductosPage() {
     cambiarFiltros({ q: '', categoria: '', estado: '' })
   }
 
+  // Cada respuesta guarda la "clave" de los filtros con que se pidió.
+  // Si no coincide con los filtros actuales, es que la nueva todavía viene en camino: eso es "cargando".
+  // Mientras tanto se siguen mostrando los datos anteriores.
+  const clave = [pagina, porPagina, busqueda, categoria, estadoStock, verArchivados, recargas].join('|')
+  const [respuesta, setRespuesta] = useState({ clave: null, datos: null, error: null })
+  const cargando = respuesta.clave !== clave
+  const datos = respuesta.datos
+  const error = respuesta.clave === clave ? respuesta.error : null
+
   useEffect(() => {
     // Si cambian de página o de filtro rápido, ignoramos la respuesta vieja que llegue tarde
     let vigente = true
-    setCargando(true)
-    setError(null)
     listarProductos({ pagina, porPagina, busqueda, categoria, estadoStock, archivados: verArchivados })
-      .then((respuesta) => {
-        if (vigente) setDatos(respuesta)
+      .then((nuevos) => {
+        if (vigente) setRespuesta({ clave, datos: nuevos, error: null })
       })
       .catch((e) => {
-        if (vigente) setError(e.message)
-      })
-      .finally(() => {
-        if (vigente) setCargando(false)
+        if (vigente) setRespuesta((anterior) => ({ clave, datos: anterior.datos, error: e.message }))
       })
     return () => {
       vigente = false
     }
-  }, [pagina, porPagina, busqueda, categoria, estadoStock, verArchivados, recargas])
+  }, [clave, pagina, porPagina, busqueda, categoria, estadoStock, verArchivados])
 
   function abrirFormulario(idProducto) {
     setAviso(null)
@@ -155,9 +160,7 @@ export default function ProductosPage() {
   }
 
   // En archivados la única acción es restaurar; en activos, editar y archivar
-  const hayAcciones = verArchivados
-    ? puede('products.archive')
-    : puede('products.update') || puede('products.archive')
+  const hayAcciones = verArchivados ? puede('products.archive') : puede('products.update') || puede('products.archive')
 
   // Las acciones en lote (archivar / restaurar varios) son de products.archive y solo están en la vista de lista
   const puedeSeleccionar = puede('products.archive') && vista === 'lista'
@@ -167,7 +170,12 @@ export default function ProductosPage() {
   function renderAcciones(p) {
     if (verArchivados) {
       return (
-        <Boton variante="secundario" icono="unarchive" cargando={restaurando.includes(p.id)} onClick={() => restaurar([p])}>
+        <Boton
+          variante="secundario"
+          icono="unarchive"
+          cargando={restaurando.includes(p.id)}
+          onClick={() => restaurar([p])}
+        >
           Restaurar
         </Boton>
       )
@@ -175,7 +183,12 @@ export default function ProductosPage() {
     return (
       <>
         {puede('products.update') && (
-          <Boton variante="secundario" icono="edit" aria-label={`Editar ${p.nombre}`} onClick={() => abrirFormulario(p.id)} />
+          <Boton
+            variante="secundario"
+            icono="edit"
+            aria-label={`Editar ${p.nombre}`}
+            onClick={() => abrirFormulario(p.id)}
+          />
         )}
         {puede('products.archive') && (
           <Boton
@@ -223,7 +236,11 @@ export default function ProductosPage() {
       titulo: 'Estado',
       render: (p) => {
         const estado = ESTADOS_STOCK[p.estadoStock]
-        return <Badge tono={estado.tono} punto>{estado.texto}</Badge>
+        return (
+          <Badge tono={estado.tono} punto>
+            {estado.texto}
+          </Badge>
+        )
       },
     },
     // Solo la UI la oculta; el servidor es quien decide si manda el costo
@@ -295,13 +312,18 @@ export default function ProductosPage() {
             </Boton>
           )}
           {puede('products.create') && (
-            <Boton icono="add" onClick={() => abrirFormulario(null)}>Nuevo producto</Boton>
+            <Boton icono="add" onClick={() => abrirFormulario(null)}>
+              Nuevo producto
+            </Boton>
           )}
         </div>
       </header>
 
       {aviso && (
-        <p role={aviso.tipo === 'error' ? 'alert' : 'status'} className={`productos-aviso productos-aviso-${aviso.tipo}`}>
+        <p
+          role={aviso.tipo === 'error' ? 'alert' : 'status'}
+          className={`productos-aviso productos-aviso-${aviso.tipo}`}
+        >
           {aviso.texto}
         </p>
       )}
@@ -312,7 +334,11 @@ export default function ProductosPage() {
             <Input
               ref={buscador}
               type="search"
-              etiqueta={<>Buscar <kbd>Ctrl + /</kbd></>}
+              etiqueta={
+                <>
+                  Buscar <kbd>Ctrl + /</kbd>
+                </>
+              }
               placeholder="Nombre o SKU"
               aria-keyshortcuts="Control+/"
               value={texto}
@@ -326,7 +352,9 @@ export default function ProductosPage() {
           >
             <option value="">Todas</option>
             {categorias.map((nombre) => (
-              <option key={nombre} value={nombre}>{nombre}</option>
+              <option key={nombre} value={nombre}>
+                {nombre}
+              </option>
             ))}
           </Select>
         </div>
@@ -374,7 +402,11 @@ export default function ProductosPage() {
         </div>
       </div>
 
-      {error && <p role="alert" className="productos-error">No se pudieron cargar los productos: {error}</p>}
+      {error && (
+        <p role="alert" className="productos-error">
+          No se pudieron cargar los productos: {error}
+        </p>
+      )}
       {cargando && !datos && <p>Cargando productos…</p>}
 
       {datos && (
@@ -415,7 +447,9 @@ export default function ProductosPage() {
                       Archivar seleccionados
                     </Boton>
                   )}
-                  <Boton variante="secundario" onClick={() => setSeleccionados([])}>Quitar selección</Boton>
+                  <Boton variante="secundario" onClick={() => setSeleccionados([])}>
+                    Quitar selección
+                  </Boton>
                 </div>
               )}
               <Tabla
@@ -449,11 +483,7 @@ export default function ProductosPage() {
       )}
 
       {porArchivar && (
-        <ArchivarProductoModal
-          productos={porArchivar}
-          onCerrar={() => setPorArchivar(null)}
-          onArchivado={alTerminar}
-        />
+        <ArchivarProductoModal productos={porArchivar} onCerrar={() => setPorArchivar(null)} onArchivado={alTerminar} />
       )}
     </section>
   )

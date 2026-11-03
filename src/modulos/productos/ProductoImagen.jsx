@@ -5,7 +5,9 @@ export default function ProductoImagen({ src, alt = '', tamano = 'chica' }) {
   if (!src) {
     return (
       <div className={`producto-imagen producto-imagen-${tamano} producto-imagen-vacia`}>
-        <span className="material-symbols-outlined" aria-hidden="true">image</span>
+        <span className="material-symbols-outlined" aria-hidden="true">
+          image
+        </span>
       </div>
     )
   }

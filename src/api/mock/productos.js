@@ -59,12 +59,22 @@ function quitarCostoSiNoPuede(producto) {
 
 // Minúsculas y sin acentos, para que "cinturon" encuentre "Cinturón"
 function normalizar(texto) {
-  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  return texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
 }
 
 // Los filtros vacíos ('' o undefined) no filtran nada.
 // Por defecto solo trae los activos; con archivados: true trae solo los archivados.
-export function listarProductos({ pagina = 1, porPagina = 25, busqueda, categoria, estadoStock, archivados = false } = {}) {
+export function listarProductos({
+  pagina = 1,
+  porPagina = 25,
+  busqueda,
+  categoria,
+  estadoStock,
+  archivados = false,
+} = {}) {
   const texto = normalizar(busqueda ?? '').trim()
   const filtrados = productos.filter(
     (p) =>

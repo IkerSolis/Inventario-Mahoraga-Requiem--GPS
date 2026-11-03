@@ -27,7 +27,9 @@ export default function Paginacion({
             Filas por página{' '}
             <select value={porPagina} onChange={(e) => onCambiarPorPagina(Number(e.target.value))}>
               {opcionesPorPagina.map((opcion) => (
-                <option key={opcion} value={opcion}>{opcion}</option>
+                <option key={opcion} value={opcion}>
+                  {opcion}
+                </option>
               ))}
             </select>
           </label>
@@ -36,10 +38,17 @@ export default function Paginacion({
 
       <div className="paginacion-botones">
         <Flecha icono="first_page" texto="Primera página" disabled={enPrimera} onClick={() => onCambiar(1)} />
-        <Flecha icono="chevron_left" texto="Página anterior" disabled={enPrimera} onClick={() => onCambiar(pagina - 1)} />
+        <Flecha
+          icono="chevron_left"
+          texto="Página anterior"
+          disabled={enPrimera}
+          onClick={() => onCambiar(pagina - 1)}
+        />
         {paginasVisibles(pagina, totalPaginas).map((p, indice) =>
           p === '…' ? (
-            <span key={indice} className="paginacion-hueco" aria-hidden="true">…</span>
+            <span key={indice} className="paginacion-hueco" aria-hidden="true">
+              …
+            </span>
           ) : (
             <button
               key={indice}
@@ -52,7 +61,12 @@ export default function Paginacion({
             </button>
           ),
         )}
-        <Flecha icono="chevron_right" texto="Página siguiente" disabled={enUltima} onClick={() => onCambiar(pagina + 1)} />
+        <Flecha
+          icono="chevron_right"
+          texto="Página siguiente"
+          disabled={enUltima}
+          onClick={() => onCambiar(pagina + 1)}
+        />
         <Flecha icono="last_page" texto="Última página" disabled={enUltima} onClick={() => onCambiar(totalPaginas)} />
       </div>
     </nav>
@@ -62,7 +76,9 @@ export default function Paginacion({
 function Flecha({ icono, texto, disabled, onClick }) {
   return (
     <button type="button" className="paginacion-boton" aria-label={texto} disabled={disabled} onClick={onClick}>
-      <span className="material-symbols-outlined" aria-hidden="true">{icono}</span>
+      <span className="material-symbols-outlined" aria-hidden="true">
+        {icono}
+      </span>
     </button>
   )
 }

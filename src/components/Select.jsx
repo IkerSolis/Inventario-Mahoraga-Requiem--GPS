@@ -19,7 +19,11 @@ export default function Select({ etiqueta, error, id, children, ...resto }) {
       >
         {children}
       </select>
-      {error && <p id={idError} className="campo-error">{error}</p>}
+      {error && (
+        <p id={idError} className="campo-error">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

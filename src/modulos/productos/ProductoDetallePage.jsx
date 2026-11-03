@@ -15,38 +15,40 @@ export default function ProductoDetallePage() {
   const { id } = useParams() // viene de la URL /productos/:id, siempre como texto
   const location = useLocation()
   const puede = usePuede()
-  const [producto, setProducto] = useState(null)
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState(null)
   const [editando, setEditando] = useState(false)
   const [categorias, setCategorias] = useState([])
   const [aviso, setAviso] = useState(null)
   const [recargas, setRecargas] = useState(0)
 
+  // Igual que en la lista: la respuesta recuerda con qué "clave" se pidió; si no es la actual, está cargando
+  const clave = `${id}|${recargas}`
+  const [respuesta, setRespuesta] = useState({ clave: null, producto: null, error: null })
+  const cargando = respuesta.clave !== clave
+  const producto = respuesta.producto
+  const error = respuesta.clave === clave ? respuesta.error : null
+
   useEffect(() => {
     let vigente = true
-    setCargando(true)
-    setError(null)
     obtenerProducto(Number(id))
-      .then((respuesta) => {
-        if (vigente) setProducto(respuesta)
+      .then((nuevo) => {
+        if (vigente) setRespuesta({ clave, producto: nuevo, error: null })
       })
       .catch((e) => {
-        if (vigente) setError(e.message)
-      })
-      .finally(() => {
-        if (vigente) setCargando(false)
+        if (vigente) setRespuesta({ clave, producto: null, error: e.message })
       })
     return () => {
       vigente = false
     }
-  }, [id, recargas])
+  }, [clave, id])
 
   // Las categorías solo hacen falta para el formulario de edición.
   // Se depende del booleano y no de puede(), porque puede es una función nueva en cada render.
   const puedeEditar = puede('products.update')
   useEffect(() => {
-    if (puedeEditar) listarCategorias().then(setCategorias).catch(() => setCategorias([]))
+    if (puedeEditar)
+      listarCategorias()
+        .then(setCategorias)
+        .catch(() => setCategorias([]))
   }, [puedeEditar])
 
   function alGuardar(mensaje, tipo = 'exito') {
@@ -59,17 +61,27 @@ export default function ProductoDetallePage() {
   const filtrosLista = location.state?.filtrosLista
   const volver = (
     <Link to={filtrosLista ? `/productos?${filtrosLista}` : '/productos'} className="detalle-volver">
-      <span className="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+      <span className="material-symbols-outlined" aria-hidden="true">
+        arrow_back
+      </span>
       Volver al catálogo
     </Link>
   )
 
-  if (cargando && !producto) return <section>{volver}<p>Cargando producto…</p></section>
+  if (cargando && !producto)
+    return (
+      <section>
+        {volver}
+        <p>Cargando producto…</p>
+      </section>
+    )
   if (error) {
     return (
       <section>
         {volver}
-        <p role="alert" className="productos-error">No se pudo cargar el producto: {error}</p>
+        <p role="alert" className="productos-error">
+          No se pudo cargar el producto: {error}
+        </p>
       </section>
     )
   }
@@ -88,18 +100,32 @@ export default function ProductoDetallePage() {
             <div className="detalle-etiquetas">
               <span className="producto-sku">{producto.sku}</span>
               <Badge tono="info">{producto.categoria}</Badge>
-              <Badge tono={estado.tono} punto>{estado.texto}</Badge>
+              <Badge tono={estado.tono} punto>
+                {estado.texto}
+              </Badge>
               {producto.archivado && <Badge tono="neutro">Archivado</Badge>}
             </div>
           </div>
         </div>
         {/* Un archivado se restaura desde la lista antes de editarlo */}
         {puedeEditar && !producto.archivado && (
-          <Boton icono="edit" onClick={() => { setAviso(null); setEditando(true) }}>Editar</Boton>
+          <Boton
+            icono="edit"
+            onClick={() => {
+              setAviso(null)
+              setEditando(true)
+            }}
+          >
+            Editar
+          </Boton>
         )}
       </header>
 
-      {aviso && <p role="status" className={`productos-aviso productos-aviso-${aviso.tipo}`}>{aviso.texto}</p>}
+      {aviso && (
+        <p role="status" className={`productos-aviso productos-aviso-${aviso.tipo}`}>
+          {aviso.texto}
+        </p>
+      )}
 
       <div className="detalle-tarjetas">
         <article className="detalle-tarjeta">
@@ -110,7 +136,9 @@ export default function ProductoDetallePage() {
             <dt>Stock mínimo</dt>
             <dd className="cifra">{producto.stockMinimo}</dd>
             <dt>Ubicación</dt>
-            <dd>Pasillo {producto.pasillo} · Rack {producto.rack} · Gaveta {producto.gaveta}</dd>
+            <dd>
+              Pasillo {producto.pasillo} · Rack {producto.rack} · Gaveta {producto.gaveta}
+            </dd>
           </dl>
         </article>
 

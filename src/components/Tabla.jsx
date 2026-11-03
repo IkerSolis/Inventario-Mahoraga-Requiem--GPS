@@ -75,10 +75,7 @@ export default function Tabla({
                   </td>
                 )}
                 {columnas.map((columna) => (
-                  <td
-                    key={columna.clave}
-                    className={columna.alinear === 'derecha' ? 'tabla-derecha cifra' : undefined}
-                  >
+                  <td key={columna.clave} className={columna.alinear === 'derecha' ? 'tabla-derecha cifra' : undefined}>
                     {columna.render ? columna.render(fila) : fila[columna.clave]}
                   </td>
                 ))}

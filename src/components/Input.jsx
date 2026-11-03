@@ -19,7 +19,11 @@ const Input = forwardRef(function Input({ etiqueta, error, id, ...resto }, ref) 
         aria-describedby={error ? idError : undefined}
         {...resto}
       />
-      {error && <p id={idError} className="campo-error">{error}</p>}
+      {error && (
+        <p id={idError} className="campo-error">
+          {error}
+        </p>
+      )}
     </div>
   )
 })

@@ -24,13 +24,17 @@ export default function ProductoTarjetas({ productos, mostrarCosto, filtrosLista
               <div className="producto-sku">{p.sku}</div>
               <div className="producto-tarjeta-badges">
                 <Badge tono="info">{p.categoria}</Badge>
-                <Badge tono={estado.tono} punto>{estado.texto}</Badge>
+                <Badge tono={estado.tono} punto>
+                  {estado.texto}
+                </Badge>
               </div>
               <dl className="producto-tarjeta-datos">
                 <dt>Existencias</dt>
                 <dd className="cifra">{p.existencias}</dd>
                 <dt>Precio</dt>
-                <dd className="cifra"><PrecioVenta valor={p.precioVenta} /></dd>
+                <dd className="cifra">
+                  <PrecioVenta valor={p.precioVenta} />
+                </dd>
                 {mostrarCosto && p.precioCompra != null && (
                   <>
                     <dt>Costo</dt>

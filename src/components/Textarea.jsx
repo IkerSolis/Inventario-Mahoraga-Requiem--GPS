@@ -18,7 +18,11 @@ export default function Textarea({ etiqueta, error, id, rows = 3, ...resto }) {
         aria-describedby={error ? idError : undefined}
         {...resto}
       />
-      {error && <p id={idError} className="campo-error">{error}</p>}
+      {error && (
+        <p id={idError} className="campo-error">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

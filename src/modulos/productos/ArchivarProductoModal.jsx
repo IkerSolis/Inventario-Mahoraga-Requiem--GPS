@@ -33,7 +33,9 @@ export default function ArchivarProductoModal({ productos, onCerrar, onArchivado
       titulo={uno ? '¿Archivar producto?' : `¿Archivar ${productos.length} productos?`}
       acciones={
         <>
-          <Boton variante="secundario" onClick={onCerrar}>Cancelar</Boton>
+          <Boton variante="secundario" onClick={onCerrar}>
+            Cancelar
+          </Boton>
           <Boton variante="peligro" icono="archive" cargando={archivando} onClick={confirmar}>
             Archivar
           </Boton>
@@ -61,7 +63,11 @@ export default function ArchivarProductoModal({ productos, onCerrar, onArchivado
         </p>
       )}
 
-      {error && <p role="alert" className="productos-aviso productos-aviso-error">{error}</p>}
+      {error && (
+        <p role="alert" className="productos-aviso productos-aviso-error">
+          {error}
+        </p>
+      )}
     </Modal>
   )
 }
