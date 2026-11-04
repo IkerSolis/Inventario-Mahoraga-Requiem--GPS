@@ -1,0 +1,81 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.layout-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 15rem;
+  padding: 1rem;
+  background: var(--color-superficie);
+  border-right: 1px solid var(--color-borde);
+}
+
+.layout-marca {
+  padding: 0.5rem 0.75rem 1rem;
+  font-size: 1.125rem;
+}
+
+.layout-enlace {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border-radius: var(--radio-control);
+  color: var(--color-texto);
+  text-decoration: none;
+}
+
+.layout-enlace:hover {
+  background: var(--color-fondo);
+}
+
+/* NavLink agrega la clase "active" a la ruta actual */
+.layout-enlace.active {
+  background: var(--color-primario);
+  color: #fff;
+}
+
+.layout-contenido {
+  flex: 1;
+  min-width: 0;
+}
+
+.layout-barra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.layout-principal {
+  padding: 1.5rem;
+}
+
+@media (max-width: 720px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .layout-menu {
+    flex-direction: row;
+    width: auto;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--color-borde);
+  }
+
+  .layout-marca {
+    display: none;
+  }
+
+  .layout-barra {
+    flex-wrap: wrap;
+  }
+}

@@ -1,0 +1,2 @@
+# Saltos de línea LF para todos (Windows, Mac y Linux), igual que espera Prettier
+* text=auto eol=lf

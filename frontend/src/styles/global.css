@@ -1,0 +1,39 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  color: var(--color-texto);
+  background: var(--color-fondo);
+}
+
+/* Cifras alineadas en columna (precios, existencias, cantidades) */
+.cifra,
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: var(--color-primario);
+}
+
+/* Atajos de teclado, por ejemplo <kbd>Ctrl + /</kbd> */
+kbd {
+  padding: 0 0.375rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.25rem;
+  background: var(--color-fondo);
+  color: var(--color-texto-suave);
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+/* Contorno visible al navegar con teclado, igual para todos los controles */
+:focus-visible {
+  outline: 2px solid var(--color-primario);
+  outline-offset: 2px;
+}

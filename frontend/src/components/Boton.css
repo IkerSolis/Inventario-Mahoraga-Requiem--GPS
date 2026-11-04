@@ -1,0 +1,74 @@
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radio-control);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.boton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.boton .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+.boton-primario {
+  background: var(--color-primario);
+  color: #fff;
+}
+
+.boton-primario:hover:not(:disabled) {
+  background: var(--color-primario-hover);
+}
+
+.boton-secundario {
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  border-color: var(--color-borde);
+}
+
+.boton-secundario:hover:not(:disabled) {
+  background: var(--color-fondo);
+}
+
+/* El rojo puro no tiene contraste suficiente con texto blanco; se oscurece un poco */
+.boton-peligro {
+  background: color-mix(in srgb, var(--color-critico) 80%, black);
+  color: #fff;
+}
+
+.boton-peligro:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-critico) 65%, black);
+}
+
+.girando {
+  animation: girar 1s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .girando {
+    animation: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .boton {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

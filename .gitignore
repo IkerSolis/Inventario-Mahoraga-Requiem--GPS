@@ -1,0 +1,4 @@
+# Para todo el repositorio (frontend/ y el futuro backend/)
+node_modules
+dist
+.env
