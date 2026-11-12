@@ -162,13 +162,79 @@ function requirePermission(permissionCode) {
 
 /**
  * Middleware para verificar aislamiento de multi-negocio y alcance horizontal
+ * Valida business_id y, opcionalmente, verifica si el usuario tiene asignada una sucursal o almacén específico
  */
-function requireScope(req, res, next) {
-  // Asegura que las peticiones siempre operen bajo el business_id del usuario autenticado
-  if (!req.user || !req.user.business_id) {
-    return res.status(403).json({ error: 'Contexto de negocio no disponible' });
+function requireScope(reqOrOptions, res, next) {
+  // Caso de uso directo: router.use(requireScope)
+  if (reqOrOptions && reqOrOptions.headers) {
+    if (!reqOrOptions.user || !reqOrOptions.user.business_id) {
+      return res.status(403).json({ error: 'Contexto de negocio no disponible' });
+    }
+    return next();
   }
-  next();
+
+  // Caso de uso parametrizado: requireScope({ checkBranch: true, checkWarehouse: true })
+  const options = reqOrOptions || {};
+  const { checkBranch = false, checkWarehouse = false } = options;
+
+  return (req, resNext, nxt) => {
+    if (!req.user || !req.user.business_id) {
+      return resNext.status(403).json({ error: 'Contexto de negocio no disponible' });
+    }
+
+    // Propietario y administradores tienen acceso global sin restricción de sucursal
+    if (
+      req.user.is_owner ||
+      req.user.roles.includes('owner') ||
+      req.user.roles.includes('system_admin')
+    ) {
+      return nxt();
+    }
+
+    const userScopes = req.user.scopes || [];
+    if (userScopes.length === 0) {
+      return nxt();
+    }
+
+    if (checkBranch) {
+      const branchId =
+        req.params.branchId || req.query.branchId || req.body.branchId || req.body.branch_id;
+      if (branchId) {
+        const allowedBranch = userScopes.some(
+          (s) => s.branch_id === null || s.branch_id === branchId
+        );
+        if (!allowedBranch) {
+          return resNext.status(403).json({
+            error: 'Fuera de alcance',
+            code: 'FORBIDDEN_SCOPE_BRANCH',
+            message: 'No tienes autorización para acceder o realizar operaciones en esta sucursal.'
+          });
+        }
+      }
+    }
+
+    if (checkWarehouse) {
+      const warehouseId =
+        req.params.warehouseId ||
+        req.query.warehouseId ||
+        req.body.warehouseId ||
+        req.body.warehouse_id;
+      if (warehouseId) {
+        const allowedWarehouse = userScopes.some(
+          (s) => s.warehouse_id === null || s.warehouse_id === warehouseId
+        );
+        if (!allowedWarehouse) {
+          return resNext.status(403).json({
+            error: 'Fuera de alcance',
+            code: 'FORBIDDEN_SCOPE_WAREHOUSE',
+            message: 'No tienes autorización para acceder o realizar operaciones en este almacén.'
+          });
+        }
+      }
+    }
+
+    nxt();
+  };
 }
 
 module.exports = {

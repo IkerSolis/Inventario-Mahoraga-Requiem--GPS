@@ -22,3 +22,4 @@ backend/uploads/logos/*
 npm-debug.log*
 .DS_Store
 Thumbs.db
+

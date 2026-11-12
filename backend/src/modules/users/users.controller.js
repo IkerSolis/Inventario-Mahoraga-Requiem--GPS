@@ -452,6 +452,34 @@ async function setUserStatus(req, res, next) {
       });
     }
 
+    // Comprobar que no se desactive al último administrador o dueño activo del negocio
+    if (status === 'disabled') {
+      const remainingAdmins = await db('users')
+        .where('business_id', req.user.business_id)
+        .whereNull('deleted_at')
+        .where('status', 'active')
+        .whereNot('id', id)
+        .where((qb) => {
+          qb.where('is_owner', true).orWhereExists(function () {
+            this.select('*')
+              .from('user_roles')
+              .join('roles', 'user_roles.role_id', 'roles.id')
+              .whereRaw('user_roles.user_id = users.id')
+              .whereIn('roles.code', ['owner', 'system_admin']);
+          });
+        })
+        .count('id as total')
+        .first();
+
+      if (Number(remainingAdmins.total) === 0) {
+        return res.status(400).json({
+          error: 'Operación no permitida',
+          message:
+            'No puedes desactivar a este usuario porque dejarías al negocio sin ningún administrador o propietario activo.'
+        });
+      }
+    }
+
     await db('users').where({ id }).update({
       status,
       updated_by: req.user.id,
@@ -504,6 +532,32 @@ async function deleteUser(req, res, next) {
       return res.status(403).json({
         error: 'Acción prohibida',
         message: 'El Propietario (R0) no puede ser eliminado del sistema.'
+      });
+    }
+
+    // Comprobar que no se elimine al último administrador o dueño activo del negocio
+    const remainingAdmins = await db('users')
+      .where('business_id', req.user.business_id)
+      .whereNull('deleted_at')
+      .where('status', 'active')
+      .whereNot('id', id)
+      .where((qb) => {
+        qb.where('is_owner', true).orWhereExists(function () {
+          this.select('*')
+            .from('user_roles')
+            .join('roles', 'user_roles.role_id', 'roles.id')
+            .whereRaw('user_roles.user_id = users.id')
+            .whereIn('roles.code', ['owner', 'system_admin']);
+        });
+      })
+      .count('id as total')
+      .first();
+
+    if (Number(remainingAdmins.total) === 0) {
+      return res.status(400).json({
+        error: 'Operación no permitida',
+        message:
+          'No puedes eliminar a este usuario porque dejarías al negocio sin ningún administrador o propietario activo.'
       });
     }
 

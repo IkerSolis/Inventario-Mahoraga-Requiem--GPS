@@ -16,6 +16,7 @@
     "test:roles": "node --test tests/roles.test.js",
     "test:dashboards": "node --test tests/dashboards.test.js",
     "test:settings": "node --test tests/settings.test.js",
+    "test:fase3": "node --test tests/fase3.test.js",
     "lint": "eslint src/ tests/",
     "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\""
   },

@@ -12,6 +12,7 @@ const settingsRoutes = require('./modules/settings/settings.routes');
 const rolesController = require('./modules/roles/roles.controller');
 const { authenticateToken, requirePermission } = require('./middlewares/authMiddleware');
 const errorHandler = require('./middlewares/errorHandler');
+const db = require('./database/connection');
 
 const app = express();
 
@@ -63,6 +64,56 @@ app.get(
   authenticateToken,
   requirePermission('roles.read'),
   rolesController.listPermissions
+);
+app.get(
+  '/api/audit-logs',
+  authenticateToken,
+  requirePermission('audit.read'),
+  async (req, res, next) => {
+    try {
+      const page = Number(req.query.page) || 1;
+      const limit = Math.min(Number(req.query.limit) || 20, 100);
+      const offset = (page - 1) * limit;
+
+      let query = db('audit_logs').where('business_id', req.user.business_id);
+      if (req.query.entityType) {
+        query = query.where('entity_type', req.query.entityType);
+      }
+      if (req.query.action) {
+        query = query.where('action', 'like', `%${req.query.action}%`);
+      }
+
+      const countRes = await query.clone().count('id as total').first();
+      const total = Number(countRes.total) || 0;
+
+      const logs = await query.clone().orderBy('created_at', 'desc').limit(limit).offset(offset);
+
+      const formatted = logs.map((l) => ({
+        id: l.id,
+        userId: l.user_id,
+        action: l.action,
+        entityType: l.entity_type,
+        entityId: l.entity_id,
+        oldValues: l.old_values_json ? JSON.parse(l.old_values_json) : null,
+        newValues: l.new_values_json ? JSON.parse(l.new_values_json) : null,
+        ipAddress: l.ip_address,
+        userAgent: l.user_agent,
+        createdAt: l.created_at
+      }));
+
+      res.status(200).json({
+        logs: formatted,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit) || 1
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 app.use('/api/dashboards', dashboardsRoutes);
 app.use('/api/settings', settingsRoutes);

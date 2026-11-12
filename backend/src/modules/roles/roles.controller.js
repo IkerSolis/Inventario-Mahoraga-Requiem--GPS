@@ -117,6 +117,20 @@ async function createRole(req, res, next) {
       });
     }
 
+    // Verificar que no se deleguen permisos no poseídos (regla de no escalación)
+    if (!req.user.is_owner && permissions && permissions.length > 0) {
+      const permIds = permissions.map((p) => p.permissionId);
+      const requestedPerms = await db('permissions').whereIn('id', permIds).select('code');
+      const userPermCodes = new Set(req.user.permissions || []);
+      const unauthorized = requestedPerms.filter((p) => !userPermCodes.has(p.code));
+      if (unauthorized.length > 0) {
+        return res.status(403).json({
+          error: 'Escalación no permitida',
+          message: `No tienes autorización para delegar o asignar los siguientes permisos: ${unauthorized.map((p) => p.code).join(', ')}`
+        });
+      }
+    }
+
     const roleId = uuidv4();
 
     await db.transaction(async (trx) => {
@@ -187,6 +201,20 @@ async function updateRole(req, res, next) {
         message:
           'El rol Propietario (R0) está protegido y sus permisos universales no pueden modificarse.'
       });
+    }
+
+    // Verificar que no se deleguen permisos no poseídos (regla de no escalación)
+    if (!req.user.is_owner && permissions && permissions.length > 0) {
+      const permIds = permissions.map((p) => p.permissionId);
+      const requestedPerms = await db('permissions').whereIn('id', permIds).select('code');
+      const userPermCodes = new Set(req.user.permissions || []);
+      const unauthorized = requestedPerms.filter((p) => !userPermCodes.has(p.code));
+      if (unauthorized.length > 0) {
+        return res.status(403).json({
+          error: 'Escalación no permitida',
+          message: `No tienes autorización para delegar o asignar los siguientes permisos: ${unauthorized.map((p) => p.code).join(', ')}`
+        });
+      }
     }
 
     const updates = { updated_at: new Date() };
@@ -303,11 +331,206 @@ async function listPermissions(req, res, next) {
   }
 }
 
+/**
+ * Matriz de fábrica de roles predeterminados para restauración
+ */
+const defaultRoleMatrices = {
+  system_admin: {
+    name: 'Administrador del sistema',
+    description: 'Administra usuarios, roles, catálogos, sucursales, parámetros y reportes.',
+    permissionIds: [
+      'p01',
+      'p02',
+      'p03',
+      'p04',
+      'p05',
+      'p06',
+      'p07',
+      'p08',
+      'p09',
+      'p10',
+      'p11',
+      'p12',
+      'p13',
+      'p14',
+      'p15',
+      'p16',
+      'p17',
+      'p18',
+      'p19',
+      'p20',
+      'p21',
+      'p22',
+      'p23',
+      'p24',
+      'p25',
+      'p26',
+      'p27',
+      'p28',
+      'p29',
+      'p30'
+    ]
+  },
+  inventory_manager: {
+    name: 'Gerente de inventario / Operaciones',
+    description: 'Supervisa stock, almacenes, movimientos, conteos, ajustes y reportes.',
+    approvalLimitAmount: 10000,
+    approvalLimitQty: 50,
+    requiresSecondApprover: false,
+    permissionIds: [
+      'p01',
+      'p06',
+      'p10',
+      'p11',
+      'p12',
+      'p13',
+      'p14',
+      'p15',
+      'p16',
+      'p17',
+      'p18',
+      'p19',
+      'p20',
+      'p21',
+      'p22',
+      'p23',
+      'p24',
+      'p26',
+      'p28',
+      'p29',
+      'p30'
+    ]
+  },
+  warehouse_supervisor: {
+    name: 'Supervisor de almacén',
+    description: 'Supervisa operaciones diarias de almacén, valida conteos y recepciones.',
+    approvalLimitAmount: 2500,
+    approvalLimitQty: 10,
+    requiresSecondApprover: true,
+    permissionIds: [
+      'p10',
+      'p11',
+      'p12',
+      'p14',
+      'p15',
+      'p16',
+      'p17',
+      'p18',
+      'p19',
+      'p20',
+      'p24',
+      'p28',
+      'p29'
+    ]
+  },
+  warehouse_operator: {
+    name: 'Almacenista / Operador',
+    description: 'Registra entradas, salidas, transferencias y conteos físicos. Solicita ajustes.',
+    permissionIds: ['p10', 'p14', 'p15', 'p16', 'p17', 'p18', 'p19']
+  },
+  purchasing: {
+    name: 'Compras',
+    description: 'Gestiona proveedores y órdenes de compra. Consulta catálogo y existencias.',
+    permissionIds: ['p10', 'p14', 'p15', 'p21', 'p22', 'p26', 'p28']
+  },
+  sales: {
+    name: 'Ventas / Mostrador',
+    description: 'Consulta productos y existencias. Registra salidas de ventas.',
+    permissionIds: ['p10', 'p14', 'p24', 'p25', 'p27', 'p28']
+  },
+  auditor: {
+    name: 'Auditor / Consulta',
+    description: 'Estricto acceso de solo lectura a inventarios, kárdex, auditoría y reportes.',
+    permissionIds: ['p01', 'p06', 'p10', 'p14', 'p21', 'p24', 'p26', 'p28', 'p30']
+  }
+};
+
+/**
+ * Restaurar rol predeterminado a su configuración de fábrica (POST /api/roles/:id/reset)
+ */
+async function resetRoleToDefaults(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const role = await db('roles').where({ id, business_id: req.user.business_id }).first();
+
+    if (!role) {
+      return res.status(404).json({ error: 'Rol no encontrado' });
+    }
+
+    if (!role.is_default) {
+      return res.status(400).json({
+        error: 'Operación no válida',
+        message:
+          'Solo los roles predeterminados del sistema (R1 a R7) pueden ser restaurados a valores de fábrica.'
+      });
+    }
+
+    if (role.code === 'owner') {
+      return res.status(403).json({
+        error: 'Rol protegido',
+        message:
+          'El rol Propietario (R0) está permanentemente protegido y no requiere restauración.'
+      });
+    }
+
+    const factoryConfig = defaultRoleMatrices[role.code];
+    if (!factoryConfig) {
+      return res.status(400).json({
+        error: 'Configuración no encontrada',
+        message: `No existe plantilla de fábrica para el código de rol "${role.code}".`
+      });
+    }
+
+    await db.transaction(async (trx) => {
+      // 1. Restaurar nombre y descripción original
+      await trx('roles').where({ id }).update({
+        name: factoryConfig.name,
+        description: factoryConfig.description,
+        updated_at: new Date()
+      });
+
+      // 2. Eliminar permisos existentes y reinstalar los de fábrica
+      await trx('role_permissions').where({ role_id: id }).del();
+
+      const newPermRows = factoryConfig.permissionIds.map((pId) => ({
+        id: uuidv4(),
+        role_id: id,
+        permission_id: pId,
+        approval_limit_amount: factoryConfig.approvalLimitAmount || null,
+        approval_limit_qty: factoryConfig.approvalLimitQty || null,
+        requires_second_approver: Boolean(factoryConfig.requiresSecondApprover),
+        created_at: new Date()
+      }));
+
+      await trx('role_permissions').insert(newPermRows);
+    });
+
+    await recordAuditLog({
+      businessId: req.user.business_id,
+      userId: req.user.id,
+      action: 'roles.reset_to_default',
+      entityType: 'role',
+      entityId: id,
+      newValues: { code: role.code, restoredPermissionsCount: factoryConfig.permissionIds.length },
+      req
+    });
+
+    return res.status(200).json({
+      message: `El rol "${factoryConfig.name}" ha sido restaurado exitosamente a su configuración de fábrica.`,
+      restoredPermissions: factoryConfig.permissionIds.length
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   listRoles,
   getRoleById,
   createRole,
   updateRole,
   deleteRole,
-  listPermissions
+  listPermissions,
+  resetRoleToDefaults
 };

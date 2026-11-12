@@ -183,8 +183,14 @@ npm run test:settings
 | `GET` | `/api/roles/:id` | `roles.read` | Detalle del rol y su matriz de permisos |
 | `POST` | `/api/roles` | `roles.manage` | Crea rol personalizado |
 | `PUT` | `/api/roles/:id` | `roles.manage` | Actualiza rol y permisos (R0 protegido) |
+| `POST` | `/api/roles/:id/reset` | `roles.manage` | Restaura rol predeterminado a su configuración de fábrica |
 | `DELETE` | `/api/roles/:id` | `roles.manage` | Elimina rol (bloqueado si tiene usuarios o es del sistema) |
 | `GET` | `/api/permissions` | `roles.read` | Catálogo de los 30 permisos atómicos por módulo |
+
+### Bitácora de Auditoría (`/api/audit-logs`)
+| Método | Endpoint | Permiso | Descripción |
+|---|---|---|---|
+| `GET` | `/api/audit-logs` | `audit.read` | Consulta historial de cambios críticos (paginación, filtros por fecha y entidad) |
 
 ### Dashboards y Widgets (`/api/dashboards`)
 | Método | Endpoint | Permiso | Descripción |
