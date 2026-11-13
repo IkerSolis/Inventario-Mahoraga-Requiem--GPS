@@ -87,4 +87,27 @@ Todos los movimientos y sus registros de Kardex se guardan en la misma transacci
 > **Encabezados para pruebas de permisos en desarrollo:**
 > - `x-business-id: 1`
 > - `x-user-id: 1` (en desarrollo; usa otro ID para simular una persona distinta al aprobar un ajuste)
-> - `x-user-permissions: products.read,products.create,products.update,products.archive,costs.read,stock.read,stock.count,stock.adjust.request,stock.adjust.approve,stock.movement.create`
+> - `x-user-permissions: products.read,products.create,products.update,products.archive,costs.read,stock.read,stock.count,stock.adjust.request,stock.adjust.approve,stock.movement.create,reports.read,reports.export`
+
+## 5. Reportes y Exportación (`/api/reports`)
+
+Los reportes requieren `reports.read`; descargar un archivo requiere `reports.export`. Las consultas aceptan `from`, `to`, `warehouse_id`, `product_id`, `supplier_id`, `category_id`, `page` y `limit` (máximo 500 filas por página). El pronóstico de quiebre usa `threshold_days` de historial de salidas para estimar si el stock disponible alcanzaría para menos de 24 horas.
+
+| Método | Endpoint | Permiso | Descripción |
+| :--- | :--- | :--- | :--- |
+| **GET** | `/api/reports/inventory-valuation` | `reports.read` | Existencias por almacén/lote y valuación con costo promedio. |
+| **GET** | `/api/reports/movement-history` | `reports.read` | Kardex por periodo, producto y almacén. |
+| **GET** | `/api/reports/supplier-receipts` | `reports.read` | Entradas completadas agrupadas por proveedor en el periodo. |
+| **GET** | `/api/reports/sales-dispatches` | `reports.read` | Salidas de venta agrupadas por producto y almacén. |
+| **GET** | `/api/reports/low-stock` | `reports.read` | Stock disponible bajo mínimo y productos con riesgo estimado de quiebre en 24 horas. |
+| **GET** | `/api/reports/product-margins` | `reports.read` | Precio, costo y margen bruto unitario actual por producto. |
+| **GET** | `/api/reports/category-performance` | `reports.read` | Productos activos y despachos agrupados por categoría. |
+| **GET** | `/api/reports/top-selling` | `reports.read` | Productos con más unidades despachadas en el periodo. |
+| **GET** | `/api/reports/slow-moving` | `reports.read` | Existencias activas ordenadas por antigüedad del último despacho. |
+| **GET** | `/api/reports/product-catalog` | `reports.read` | Catálogo de productos y precios actuales. |
+| **GET** | `/api/reports/:report/export?format=csv\|xlsx\|pdf` | `reports.export` | Exporta cualquiera de los reportes anteriores; respeta filtros, paginación y permisos de costos. |
+| **GET** | `/api/reports/exports/audit` | `reports.read` | Historial de exportaciones, filtrable por reporte, formato y usuario. |
+
+El sistema actual no almacena una entidad separada de ventas ni el precio de venta histórico: los reportes de ventas y categorías estiman ingresos con el precio actual del producto y contabilizan los movimientos `issue` como despachos. Los reportes de proveedor presentan su ID porque aún no existe un catálogo de proveedores. Los costos, valuaciones y márgenes se omiten sin `costs.read`; cada exportación exitosa registra usuario, negocio, filtros, formato, reporte, cantidad de filas y fecha en `report_export_audit`.
+
+Para pruebas de reportes en desarrollo, agrega `reports.read,reports.export` al encabezado `x-user-permissions`.

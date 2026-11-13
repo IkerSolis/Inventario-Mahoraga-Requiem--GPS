@@ -39,7 +39,9 @@ function authenticateUser(req, res, next) {
       'stock.count',
       'stock.adjust.request',
       'stock.adjust.approve',
-      'stock.movement.create'
+      'stock.movement.create',
+      'reports.read',
+      'reports.export'
     ];
 
   req.user = {

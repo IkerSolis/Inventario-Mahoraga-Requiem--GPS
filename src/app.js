@@ -10,6 +10,7 @@ const path = require('path');
 const productsRoutes = require('./modules/products/products.routes');
 const categoriesRoutes = require('./modules/categories/categories.routes');
 const inventoryRoutes = require('./modules/inventory/inventory.routes');
+const reportsRoutes = require('./modules/reports/reports.routes');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
 app.use('/api/products', productsRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // Ruta de comprobación de salud del servidor
 app.get('/api/health', (req, res) => {
