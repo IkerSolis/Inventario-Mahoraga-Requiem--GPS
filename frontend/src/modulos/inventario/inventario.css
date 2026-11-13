@@ -148,3 +148,25 @@
 .inventario-sin-corte {
   white-space: nowrap;
 }
+
+.kardex-resultados {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.kardex-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.kardex-entra {
+  color: color-mix(in srgb, var(--color-optimo) 70%, black);
+}
+
+.kardex-sale {
+  color: color-mix(in srgb, var(--color-critico) 70%, black);
+}

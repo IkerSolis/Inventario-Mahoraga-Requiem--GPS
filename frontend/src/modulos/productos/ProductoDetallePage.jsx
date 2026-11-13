@@ -148,6 +148,11 @@ export default function ProductoDetallePage() {
             <dt>Existencias</dt>
             <dd className="cifra">{producto.existencias ?? SIN_DATO}</dd>
           </dl>
+          {puede('stock.read') && (
+            <p className="detalle-nota">
+              <Link to={`/inventario/kardex/${producto.id}`}>Ver kardex del producto</Link>
+            </p>
+          )}
           <p className="detalle-nota">
             Existencias, mínimos y ubicación por bodega en{' '}
             <Link to="/inventario/existencias">Inventario › Existencias</Link>.
