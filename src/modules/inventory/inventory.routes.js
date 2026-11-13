@@ -25,6 +25,24 @@ router.get(
   (req, res) => inventoryController.getKardex(req, res)
 );
 
+router.get(
+  '/movements',
+  authorizePermission('stock.read'),
+  (req, res) => inventoryController.listMovements(req, res)
+);
+
+router.post(
+  '/movements',
+  authorizePermission('stock.movement.create'),
+  (req, res) => inventoryController.createMovement(req, res)
+);
+
+router.post(
+  '/movements/:id/receive',
+  authorizePermission('stock.movement.create'),
+  (req, res) => inventoryController.receiveTransfer(req, res)
+);
+
 // Configuracion de minimos y maximos de stock para reabastecimiento
 router.post(
   '/levels',
@@ -47,6 +65,12 @@ router.post(
 );
 
 // Generar solicitud de ajuste de existencias
+router.get(
+  '/adjustments',
+  authorizePermission('stock.adjust.approve'),
+  (req, res) => inventoryController.listAdjustments(req, res)
+);
+
 router.post(
   '/adjustments/request',
   authorizePermission('stock.adjust.request'),
@@ -61,4 +85,3 @@ router.post(
 );
 
 module.exports = router;
-

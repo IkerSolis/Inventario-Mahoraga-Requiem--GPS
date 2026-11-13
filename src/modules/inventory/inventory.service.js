@@ -115,7 +115,18 @@ class InventoryService {
       query.where('warehouse_id', warehouseId);
     }
 
-    const movements = await query.orderBy('id', 'asc');
+    const movements = await query
+      .leftJoin('inventory_operations', 'kardex_movements.operation_id', 'inventory_operations.id')
+      .select(
+        'kardex_movements.*',
+        'inventory_operations.status as operation_status',
+        'inventory_operations.source_warehouse_id',
+        'inventory_operations.destination_warehouse_id',
+        'inventory_operations.return_direction',
+        'inventory_operations.disposition'
+      )
+      .orderBy('kardex_movements.created_at', 'asc')
+      .orderBy('kardex_movements.id', 'asc');
 
     // Sanitizamos costos si el usuario no tiene permiso costs.read
     return movements.map((mov) => {
@@ -132,41 +143,74 @@ class InventoryService {
   async setStockLevels(businessId, data) {
     const { product_id, warehouse_id = 1, min_stock, max_stock, aisle, rack, bin_location } = data;
 
-    const existing = await db('warehouse_stock')
-      .where({ business_id: businessId, warehouse_id, product_id })
-      .first();
+    return db.transaction(async (trx) => {
+      const product = await trx('products')
+        .where({ id: product_id, business_id: businessId })
+        .first();
+      if (!product) {
+        const error = new Error('El producto no existe o no pertenece a este negocio');
+        error.statusCode = 404;
+        throw error;
+      }
 
-    if (existing) {
-      await db('warehouse_stock')
-        .where({ id: existing.id })
-        .update({
-          min_stock: min_stock !== undefined ? min_stock : existing.min_stock,
-          max_stock: max_stock !== undefined ? max_stock : existing.max_stock,
-          aisle: aisle !== undefined ? aisle : existing.aisle,
-          rack: rack !== undefined ? rack : existing.rack,
-          bin_location: bin_location !== undefined ? bin_location : existing.bin_location,
-          updated_at: new Date()
-        });
+      const existing = await trx('warehouse_stock')
+        .where({ business_id: businessId, warehouse_id, product_id })
+        .where((builder) => builder.whereNull('lot_number').orWhere('lot_number', ''))
+        .forUpdate()
+        .first();
 
-      return await db('warehouse_stock').where({ id: existing.id }).first();
-    }
+      if (existing) {
+        const nextMin = min_stock !== undefined ? min_stock : Number(existing.min_stock);
+        const nextMax = max_stock !== undefined ? max_stock : Number(existing.max_stock);
+        if (nextMax > 0 && nextMax < nextMin) {
+          const error = new Error('El stock máximo debe ser mayor o igual al stock mínimo');
+          error.statusCode = 400;
+          throw error;
+        }
 
-    const [newId] = await db('warehouse_stock').insert({
-      business_id: businessId,
-      warehouse_id,
-      product_id,
-      physical_qty: 0,
-      reserved_qty: 0,
-      min_stock: min_stock || 0,
-      max_stock: max_stock || 0,
-      aisle: aisle || null,
-      rack: rack || null,
-      bin_location: bin_location || null,
-      created_at: new Date(),
-      updated_at: new Date()
+        await trx('warehouse_stock')
+          .where({ id: existing.id })
+          .update({
+            min_stock: nextMin,
+            max_stock: nextMax,
+            aisle: aisle !== undefined ? aisle : existing.aisle,
+            rack: rack !== undefined ? rack : existing.rack,
+            bin_location: bin_location !== undefined ? bin_location : existing.bin_location,
+            updated_at: new Date()
+          });
+
+        return trx('warehouse_stock').where({ id: existing.id }).first();
+      }
+
+      const newMin = min_stock || 0;
+      const newMax = max_stock || 0;
+      if (newMax > 0 && newMax < newMin) {
+        const error = new Error('El stock máximo debe ser mayor o igual al stock mínimo');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      await trx('warehouse_stock').insert({
+        business_id: businessId,
+        warehouse_id,
+        product_id,
+        lot_number: '',
+        physical_qty: 0,
+        reserved_qty: 0,
+        quarantine_qty: 0,
+        min_stock: newMin,
+        max_stock: newMax,
+        aisle: aisle || null,
+        rack: rack || null,
+        bin_location: bin_location || null,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).onConflict(['business_id', 'warehouse_id', 'product_id', 'lot_number']).ignore();
+
+      return trx('warehouse_stock')
+        .where({ business_id: businessId, warehouse_id, product_id, lot_number: '' })
+        .first();
     });
-
-    return await db('warehouse_stock').where({ id: newId }).first();
   }
 
   // Inicia una nueva sesion de conteo ciclico
@@ -186,75 +230,135 @@ class InventoryService {
 
   // Registra las cantidades fisicas contadas y calcula diferencias
   async recordCountItems(businessId, countId, items) {
-    const session = await db('stock_counts')
-      .where({ id: countId, business_id: businessId })
-      .first();
-
-    if (!session) {
-      const error = new Error('Sesion de conteo no encontrada');
-      error.statusCode = 404;
-      throw error;
-    }
-
-    if (session.status !== 'in_progress') {
-      const error = new Error('Esta sesion de conteo ya se encuentra cerrada o completada');
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const processedItems = [];
-
-    for (const item of items) {
-      const stock = await db('warehouse_stock')
-        .where({
-          business_id: businessId,
-          warehouse_id: session.warehouse_id,
-          product_id: item.product_id
-        })
+    return db.transaction(async (trx) => {
+      const session = await trx('stock_counts')
+        .where({ id: countId, business_id: businessId })
+        .forUpdate()
         .first();
 
-      const systemQty = stock ? Number(stock.physical_qty) : 0;
-      const countedQty = Number(item.counted_qty);
-      const differenceQty = countedQty - systemQty;
+      if (!session) {
+        const error = new Error('Sesion de conteo no encontrada');
+        error.statusCode = 404;
+        throw error;
+      }
 
-      const [itemId] = await db('stock_count_items').insert({
-        stock_count_id: countId,
-        product_id: item.product_id,
-        system_qty: systemQty,
-        counted_qty: countedQty,
-        difference_qty: differenceQty,
-        created_at: new Date(),
-        updated_at: new Date()
-      });
+      if (session.status !== 'in_progress') {
+        const error = new Error('Esta sesion de conteo ya se encuentra cerrada o completada');
+        error.statusCode = 409;
+        throw error;
+      }
 
-      processedItems.push({
-        id: itemId,
-        product_id: item.product_id,
-        system_qty: systemQty,
-        counted_qty: countedQty,
-        difference_qty: differenceQty
-      });
-    }
+      const processedItems = [];
+      const seenProducts = new Set();
+      for (const item of items) {
+        const lotNumber = item.lot_number || '';
+        const countKey = `${item.product_id}:${lotNumber}`;
+        if (seenProducts.has(countKey)) {
+          const error = new Error('No se puede contar el mismo producto y lote más de una vez en una sesión');
+          error.statusCode = 400;
+          throw error;
+        }
+        seenProducts.add(countKey);
 
-    await db('stock_counts')
-      .where({ id: countId })
-      .update({ status: 'completed', updated_at: new Date() });
+        const product = await trx('products')
+          .where({ id: item.product_id, business_id: businessId })
+          .first();
+        if (!product) {
+          const error = new Error(`El producto ${item.product_id} no existe o no pertenece a este negocio`);
+          error.statusCode = 404;
+          throw error;
+        }
 
-    return {
-      count_session_id: countId,
-      status: 'completed',
-      items: processedItems
-    };
+        const stockQuery = trx('warehouse_stock')
+          .where({
+            business_id: businessId,
+            warehouse_id: session.warehouse_id,
+            product_id: item.product_id
+          });
+        if (lotNumber) {
+          stockQuery.where('lot_number', lotNumber);
+        } else {
+          stockQuery.where((builder) => builder.whereNull('lot_number').orWhere('lot_number', ''));
+        }
+        const stock = await stockQuery.forUpdate().first();
+        const systemQty = stock ? Number(stock.physical_qty) : 0;
+        const countedQty = Number(item.counted_qty);
+        const differenceQty = countedQty - systemQty;
+
+        const [itemId] = await trx('stock_count_items').insert({
+          stock_count_id: countId,
+          product_id: item.product_id,
+          lot_number: lotNumber,
+          system_qty: systemQty,
+          counted_qty: countedQty,
+          difference_qty: differenceQty,
+          created_at: new Date(),
+          updated_at: new Date()
+        });
+
+        let adjustmentId = null;
+        if (differenceQty !== 0) {
+          [adjustmentId] = await trx('stock_adjustments').insert({
+            business_id: businessId,
+            warehouse_id: session.warehouse_id,
+            product_id: item.product_id,
+            lot_number: lotNumber,
+            adjustment_type: differenceQty > 0 ? 'positive' : 'negative',
+            qty: Math.abs(differenceQty),
+            reason: `Diferencia detectada en conteo cíclico #${countId}`,
+            status: 'pending',
+            requested_by: session.created_by,
+            created_at: new Date(),
+            updated_at: new Date()
+          });
+        }
+
+        processedItems.push({
+          id: itemId,
+          product_id: item.product_id,
+          system_qty: systemQty,
+          counted_qty: countedQty,
+          difference_qty: differenceQty,
+          adjustment_id: adjustmentId
+        });
+      }
+
+      await trx('stock_counts')
+        .where({ id: countId, status: 'in_progress' })
+        .update({ status: 'completed', updated_at: new Date() });
+
+      return {
+        count_session_id: countId,
+        status: 'completed',
+        items: processedItems
+      };
+    });
   }
 
   // Genera solicitud de ajuste de existencias
   async requestAdjustment(businessId, data, userId) {
-    const { warehouse_id = 1, product_id, adjustment_type, qty, reason, evidence_url } = data;
+    const {
+      warehouse_id = 1,
+      product_id,
+      lot_number,
+      adjustment_type,
+      qty,
+      reason,
+      evidence_url
+    } = data;
+
+    const product = await db('products').where({ id: product_id, business_id: businessId }).first();
+    if (!product) {
+      const error = new Error('El producto no existe o no pertenece a este negocio');
+      error.statusCode = 404;
+      throw error;
+    }
 
     const [id] = await db('stock_adjustments').insert({
       business_id: businessId,
       warehouse_id,
       product_id,
+      lot_number: lot_number || '',
       adjustment_type,
       qty,
       reason,
@@ -265,51 +369,93 @@ class InventoryService {
       updated_at: new Date()
     });
 
-    return await db('stock_adjustments').where({ id }).first();
+    return db('stock_adjustments').where({ id }).first();
+  }
+
+  async listAdjustments(businessId, filters) {
+    const query = db('stock_adjustments').where('business_id', businessId);
+    if (filters.status) query.where('status', filters.status);
+    if (filters.warehouse_id) query.where('warehouse_id', filters.warehouse_id);
+    if (filters.product_id) query.where('product_id', filters.product_id);
+
+    const countResult = await query.clone().count({ total: '*' }).first();
+    const total = Number(countResult.total);
+    const data = await query.clone()
+      .orderBy('created_at', 'desc')
+      .orderBy('id', 'desc')
+      .limit(filters.limit)
+      .offset((filters.page - 1) * filters.limit);
+
+    return {
+      data,
+      pagination: {
+        page: filters.page,
+        limit: filters.limit,
+        total,
+        totalPages: Math.ceil(total / filters.limit)
+      }
+    };
   }
 
   // Aprueba solicitud de ajuste con transaccion y registro en Kardex
   async approveAdjustment(businessId, adjustmentId, approverId) {
-    const adjustment = await db('stock_adjustments')
-      .where({ id: adjustmentId, business_id: businessId })
-      .first();
+    return db.transaction(async (trx) => {
+      const adjustment = await trx('stock_adjustments')
+        .where({ id: adjustmentId, business_id: businessId })
+        .forUpdate()
+        .first();
+      if (!adjustment) {
+        const error = new Error('Solicitud de ajuste no encontrada');
+        error.statusCode = 404;
+        throw error;
+      }
+      if (adjustment.status !== 'pending') {
+        const error = new Error('El ajuste ya fue procesado con estatus: ' + adjustment.status);
+        error.statusCode = 409;
+        throw error;
+      }
+      if (adjustment.requested_by === approverId) {
+        const error = new Error('La persona que solicita el ajuste no puede aprobarlo');
+        error.statusCode = 403;
+        throw error;
+      }
 
-    if (!adjustment) {
-      const error = new Error('Solicitud de ajuste no encontrada');
-      error.statusCode = 404;
-      throw error;
-    }
-
-    if (adjustment.status !== 'pending') {
-      const error = new Error('El ajuste ya fue procesado con estatus: ' + adjustment.status);
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const trx = await db.transaction();
-
-    try {
-      let currentStock = await trx('warehouse_stock')
+      const currentStockQuery = trx('warehouse_stock')
         .where({
           business_id: businessId,
           warehouse_id: adjustment.warehouse_id,
           product_id: adjustment.product_id
-        })
-        .first();
+        });
+      if (adjustment.lot_number) {
+        currentStockQuery.where('lot_number', adjustment.lot_number);
+      } else {
+        currentStockQuery.where((builder) => builder.whereNull('lot_number').orWhere('lot_number', ''));
+      }
+      let currentStock = await currentStockQuery.forUpdate().first();
 
       if (!currentStock) {
-        const [newStockId] = await trx('warehouse_stock').insert({
+        await trx('warehouse_stock').insert({
           business_id: businessId,
           warehouse_id: adjustment.warehouse_id,
           product_id: adjustment.product_id,
+          lot_number: adjustment.lot_number || '',
           physical_qty: 0,
           reserved_qty: 0,
+          quarantine_qty: 0,
           min_stock: 0,
           max_stock: 0,
+          average_cost: 0,
           created_at: new Date(),
           updated_at: new Date()
-        });
-        currentStock = await trx('warehouse_stock').where({ id: newStockId }).first();
+        }).onConflict(['business_id', 'warehouse_id', 'product_id', 'lot_number']).ignore();
+        currentStock = await trx('warehouse_stock')
+          .where({
+            business_id: businessId,
+            warehouse_id: adjustment.warehouse_id,
+            product_id: adjustment.product_id,
+            lot_number: adjustment.lot_number || ''
+          })
+          .first();
       }
 
       const initialQty = Number(currentStock.physical_qty);
@@ -321,14 +467,24 @@ class InventoryService {
       } else {
         resultingQty = initialQty - adjustmentQty;
         if (resultingQty < 0) {
-          throw new Error('El ajuste negativo dejaria existencias en numeros negativos');
+          const error = new Error('El ajuste negativo dejaría existencias en números negativos');
+          error.statusCode = 409;
+          throw error;
         }
+      }
+
+      if (adjustment.adjustment_type === 'negative' &&
+          initialQty - Number(currentStock.reserved_qty || 0) < adjustmentQty) {
+        const error = new Error('El ajuste negativo no puede reducir existencias reservadas');
+        error.statusCode = 409;
+        throw error;
       }
 
       await trx('warehouse_stock')
         .where({ id: currentStock.id })
         .update({
           physical_qty: resultingQty,
+          average_cost: Number(currentStock.average_cost || 0),
           updated_at: new Date()
         });
 
@@ -337,12 +493,14 @@ class InventoryService {
         business_id: businessId,
         warehouse_id: adjustment.warehouse_id,
         product_id: adjustment.product_id,
-        movement_type: 'adjustment',
+        lot_number: adjustment.lot_number || '',
+        movement_type: adjustment.adjustment_type === 'positive' ? 'adjustment_in' : 'adjustment_out',
+        operation_id: null,
         qty: adjustmentQty,
         initial_qty: initialQty,
         resulting_qty: resultingQty,
-        unit_cost: 0,
-        average_cost: 0,
+        unit_cost: Number(currentStock.average_cost || 0),
+        average_cost: Number(currentStock.average_cost || 0),
         reference_doc: 'Ajuste ID ' + adjustment.id + ': ' + adjustment.reason,
         user_id: approverId,
         created_at: new Date()
@@ -356,8 +514,6 @@ class InventoryService {
           updated_at: new Date()
         });
 
-      await trx.commit();
-
       return {
         message: 'Ajuste de inventario aprobado y aplicado al stock con exito',
         adjustment_id: adjustment.id,
@@ -365,12 +521,8 @@ class InventoryService {
         resulting_qty: resultingQty,
         status: 'approved'
       };
-    } catch (err) {
-      await trx.rollback();
-      throw err;
-    }
+    });
   }
 }
 
 module.exports = new InventoryService();
-

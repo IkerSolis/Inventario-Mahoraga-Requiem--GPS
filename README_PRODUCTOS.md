@@ -70,12 +70,21 @@ npm run dev
 | **GET** | `/api/inventory/kardex/:productId` | `stock.read` | Reconstruye la línea de tiempo contable y física (entradas, salidas, saldos y costos protegidos). |
 | **POST** | `/api/inventory/levels` | `stock.read` | Configura niveles de stock mínimo, máximo y ubicaciones físicas (pasillo, rack, gaveta). |
 | **POST** | `/api/inventory/counts` | `stock.count` | Inicia una sesión de conteo cíclico para el almacén. |
-| **POST** | `/api/inventory/counts/:id/items`| `stock.count` | Registra cantidades físicas contadas por el almacenista y calcula diferencias contra el sistema. |
+| **POST** | `/api/inventory/counts/:id/items`| `stock.count` | Registra cantidades por producto/lote; las diferencias generan solicitudes pendientes de aprobación, sin modificar directamente las existencias. |
+| **GET** | `/api/inventory/adjustments` | `stock.adjust.approve` | Lista solicitudes de ajuste pendientes (o filtradas por `status`, `warehouse_id`, `product_id`) para revisión. |
 | **POST** | `/api/inventory/adjustments/request`| `stock.adjust.request` | Genera una solicitud de ajuste de existencias con motivo y evidencia en estado pendiente. |
-| **POST** | `/api/inventory/adjustments/:id/approve`| `stock.adjust.approve` | Aprobación transaccional del supervisor/gerente que impacta el stock físico y genera registro en el Kardex. |
+| **POST** | `/api/inventory/adjustments/:id/approve`| `stock.adjust.approve` | Aprobación transaccional por otro usuario; actualiza stock y Kardex en una sola operación. |
+| **GET** | `/api/inventory/movements` | `stock.read` | Historial paginado de operaciones, con filtros `type`, `status` y `product_id`. |
+| **POST** | `/api/inventory/movements` | `stock.movement.create` | Registra entradas (`receive`), salidas (`issue`), transferencias (`transfer`) y devoluciones (`return`), con clave `idempotency_key`. |
+| **POST** | `/api/inventory/movements/:id/receive` | `stock.movement.create` | Recibe una transferencia en tránsito en el almacén destino; una recepción repetida no duplica existencias. |
+
+Un movimiento incluye `warehouse_id`, `product_id`, `qty` y `idempotency_key`; acepta además `lot_number`, `unit_cost` y `reference_doc`. Una transferencia requiere `destination_warehouse_id`, descuenta el origen al despacharse y suma el destino únicamente al recibirse. Para devoluciones, `return_direction` es `customer` o `supplier`; una devolución de cliente admite `disposition: "available"` o `"quarantine"` (por defecto entra disponible). El stock en cuarentena también se contabiliza como reservado y no puede salir como disponible.
+
+Todos los movimientos y sus registros de Kardex se guardan en la misma transacción; no existe borrado de movimientos confirmados. Los costos solo se exponen a usuarios con `costs.read`.
 
 ---
 
 > **Encabezados para pruebas de permisos en desarrollo:**
 > - `x-business-id: 1`
-> - `x-user-permissions: products.read,products.create,products.update,products.archive,costs.read,stock.read,stock.count,stock.adjust.request,stock.adjust.approve`
+> - `x-user-id: 1` (en desarrollo; usa otro ID para simular una persona distinta al aprobar un ajuste)
+> - `x-user-permissions: products.read,products.create,products.update,products.archive,costs.read,stock.read,stock.count,stock.adjust.request,stock.adjust.approve,stock.movement.create`

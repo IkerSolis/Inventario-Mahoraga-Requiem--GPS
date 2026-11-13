@@ -25,6 +25,8 @@ function authenticateUser(req, res, next) {
   const permissionsHeader = req.headers['x-user-permissions'];
 
   const businessId = businessIdHeader ? parseInt(businessIdHeader, 10) : 1;
+  const userIdHeader = req.headers['x-user-id'];
+  const userId = userIdHeader ? parseInt(userIdHeader, 10) : 1;
   const permissions = permissionsHeader
     ? permissionsHeader.split(',').map(p => p.trim())
     : [
@@ -32,11 +34,16 @@ function authenticateUser(req, res, next) {
       'products.create',
       'products.update',
       'products.archive',
-      'costs.read' // Si se quita de aquí o del header, el precio de compra no se mostrará
+      'costs.read',
+      'stock.read',
+      'stock.count',
+      'stock.adjust.request',
+      'stock.adjust.approve',
+      'stock.movement.create'
     ];
 
   req.user = {
-    id: 1,
+    id: Number.isInteger(userId) && userId > 0 ? userId : 1,
     name: 'Usuario Desarrollador',
     business_id: businessId,
     permissions: permissions
@@ -76,4 +83,3 @@ module.exports = {
   authenticateUser,
   authorizePermission
 };
-
