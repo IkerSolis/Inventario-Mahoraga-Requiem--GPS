@@ -149,7 +149,8 @@ export default function ProductoDetallePage() {
             <dd className="cifra">{producto.existencias ?? SIN_DATO}</dd>
           </dl>
           <p className="detalle-nota">
-            Existencias, mínimos y ubicación por bodega en <Link to="/inventario">Inventario › Existencias</Link>.
+            Existencias, mínimos y ubicación por bodega en{' '}
+            <Link to="/inventario/existencias">Inventario › Existencias</Link>.
           </p>
         </article>
 

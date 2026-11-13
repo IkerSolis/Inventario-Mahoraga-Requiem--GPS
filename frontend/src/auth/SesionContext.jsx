@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { obtenerSesion } from '../api/sesion.js'
 
-const SesionContext = createContext(null)
+// Exportado para las pruebas, que dan una sesión fija sin pasar por /auth/me
+// eslint-disable-next-line react-refresh/only-export-components
+export const SesionContext = createContext(null)
 
 // Carga GET /api/auth/me una vez y lo comparte con toda la app: { usuario, negocio, roles, permisos }.
 export function SesionProvider({ children }) {

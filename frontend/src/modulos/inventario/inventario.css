@@ -1,0 +1,73 @@
+/* Estilos compartidos por las pantallas de Inventario */
+
+.inventario-pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.inventario-pestana {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-bottom: 2px solid transparent;
+  color: var(--color-texto-suave);
+  text-decoration: none;
+}
+
+.inventario-pestana:hover {
+  color: var(--color-texto);
+}
+
+/* NavLink agrega la clase "active" a la pestaña actual */
+.inventario-pestana.active {
+  border-bottom-color: var(--color-primario);
+  color: var(--color-primario);
+  font-weight: 600;
+}
+
+.inventario-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.inventario-filtros > .campo {
+  min-width: 12rem;
+}
+
+.inventario-filtros-busqueda {
+  flex: 1 1 16rem;
+}
+
+.inventario-aviso {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radio-control);
+}
+
+.inventario-aviso-exito {
+  background: color-mix(in srgb, var(--color-optimo) 14%, white);
+  color: color-mix(in srgb, var(--color-optimo) 55%, black);
+}
+
+.inventario-aviso-error {
+  background: color-mix(in srgb, var(--color-critico) 12%, white);
+  color: color-mix(in srgb, var(--color-critico) 60%, black);
+}
+
+.inventario-nota {
+  color: var(--color-texto-suave);
+  font-size: 0.875rem;
+}
+
+.inventario-sku {
+  color: var(--color-texto-suave);
+  font-size: 0.8125rem;
+}
