@@ -391,6 +391,13 @@ export async function registrarMovimiento(cuerpo) {
     })
   }
 
+  const { operacion, movimiento } = crearOperacion(cuerpo, huella, usuarioActual())
+  return esperar({ ok: true, operation: sinCostos(operacion), movements: [movimiento] })
+}
+
+// Guarda la operación y mueve las existencias. Si falla (sin stock), no se guarda nada,
+// como la transacción del servidor. También se usa para los datos de ejemplo del final del archivo.
+function crearOperacion(cuerpo, huella, usuarioId) {
   const producto = productos.find((p) => p.id === Number(cuerpo.product_id) && p.status === 'active')
   if (!producto) throw errorHttp(404, 'El producto no existe o no pertenece a este negocio')
   if (Number(cuerpo.destination_warehouse_id) === Number(cuerpo.warehouse_id)) {
@@ -415,7 +422,7 @@ export async function registrarMovimiento(cuerpo) {
     disposition: cuerpo.disposition || null,
     idempotency_key: cuerpo.idempotency_key,
     request_hash: huella,
-    actor_id: usuarioActual(),
+    actor_id: usuarioId,
     received_by: null,
     completed_at: esTransferencia ? null : ahora,
     created_at: ahora,
@@ -428,12 +435,10 @@ export async function registrarMovimiento(cuerpo) {
     transfer: 'transfer_out',
     return: cuerpo.return_direction === 'customer' ? 'return_in' : 'return_out',
   }[cuerpo.type]
-  // Si falla (sin stock), no se guarda la operación: como la transacción del servidor
-  const movimiento = aplicar(operacion, operacion.source_warehouse_id, tipoKardex, usuarioActual())
+  const movimiento = aplicar(operacion, operacion.source_warehouse_id, tipoKardex, usuarioId)
   ids.operacion++
   operaciones.push(operacion)
-
-  return esperar({ ok: true, operation: sinCostos(operacion), movements: [movimiento] })
+  return { operacion, movimiento }
 }
 
 // POST /api/inventory/movements/:id/receive (recibir una transferencia en la bodega destino)
@@ -681,3 +686,43 @@ export async function aprobarAjuste(id) {
     status: 'approved',
   })
 }
+
+// ---------- Datos de ejemplo ----------
+// Algunos movimientos (hechos por el almacenista, usuario 5) y ajustes pendientes, para que las pantallas
+// de Movimientos y Ajustes no empiecen vacías.
+const MOVIMIENTOS_EJEMPLO = [
+  { type: 'receive', warehouse_id: 1, product_id: 2, qty: 12, unit_cost: 357, reference_doc: 'OC-1001' },
+  { type: 'issue', warehouse_id: 1, product_id: 4, qty: 3, reference_doc: 'OV-2001' },
+  { type: 'issue', warehouse_id: 2, product_id: 2, qty: 2, reference_doc: 'OV-2002' },
+  { type: 'transfer', warehouse_id: 1, destination_warehouse_id: 2, product_id: 6, qty: 4, reference_doc: 'TR-301' },
+  {
+    type: 'return',
+    warehouse_id: 1,
+    product_id: 11,
+    qty: 1,
+    return_direction: 'customer',
+    disposition: 'available',
+    reference_doc: 'RMA-56',
+  },
+]
+MOVIMIENTOS_EJEMPLO.forEach((cuerpo, i) => {
+  const conClave = { ...cuerpo, idempotency_key: `ejemplo-${i + 1}` }
+  crearOperacion(conClave, JSON.stringify(conClave), 5)
+})
+
+crearAjuste({
+  warehouse_id: 1,
+  product_id: 13,
+  adjustment_type: 'negative',
+  qty: 2,
+  reason: 'Piezas dañadas en la recepción',
+  requested_by: 5,
+})
+crearAjuste({
+  warehouse_id: 2,
+  product_id: 3,
+  adjustment_type: 'positive',
+  qty: 1,
+  reason: 'Pieza encontrada en otro anaquel',
+  requested_by: 4,
+})
