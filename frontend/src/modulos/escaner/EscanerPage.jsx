@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { listarBodegas } from '../../api/bodegas.js'
+import { existenciasDeProducto } from '../../api/inventario.js'
 import { buscarProductoPorCodigo } from '../../api/productos.js'
 import { usePuede } from '../../auth/usePuede.js'
-import { registrarMovimiento } from '../../api/movimientos.js'
 import Boton from '../../components/Boton.jsx'
+import Select from '../../components/Select.jsx'
 import ConfirmacionMovimiento from './ConfirmacionMovimiento.jsx'
 import LecturaActual from './LecturaActual.jsx'
 import LectorCodigo from './LectorCodigo.jsx'
@@ -19,6 +21,7 @@ import {
 } from './escanerLogica.js'
 import ImagenEscaner from './ImagenEscaner.jsx'
 import ManifiestoSesion from './ManifiestoSesion.jsx'
+import { registrarLectura } from './registrarLectura.js'
 import VistaCamara from './VistaCamara.jsx'
 import { hayCamaraDisponible } from './lectorZxing.js'
 import { sonar } from './sonido.js'
@@ -57,8 +60,19 @@ export default function EscanerPage() {
   // El modo vive en la URL (?modo=salida), igual que los filtros de Productos
   const modo = elegirModo(parametros.get('modo'), permitidos)
 
+  // Bodega donde se registra todo. Vive en la URL (?bodega=2); por defecto, la primera activa.
+  const [bodegas, setBodegas] = useState(null) // [{ id, codigo, nombre, sucursal, activa }]
+  const [errorBodegas, setErrorBodegas] = useState(null)
+  const bodega = bodegas?.find((b) => String(b.id) === parametros.get('bodega')) ?? bodegas?.[0] ?? null
+
+  useEffect(() => {
+    listarBodegas()
+      .then((todas) => setBodegas(todas.filter((b) => b.activa)))
+      .catch((e) => setErrorBodegas(e.message))
+  }, [])
+
   // lectura: producto leído y datos de la confirmación, o null.
-  // { producto, cantidad (texto del input), pasillo, rack, gaveta, clave (idempotencia) }
+  // { producto (con existencias, disponible y ubicación en la bodega), cantidad (texto del input), clave (idempotencia) }
   const [lectura, setLectura] = useState(null)
   const [errorLectura, setErrorLectura] = useState(null)
   const [buscando, setBuscando] = useState(false)
@@ -128,14 +142,13 @@ export default function EscanerPage() {
     enfocarLector()
   }
 
-  // La ubicación propuesta es la que ya tiene el producto; se puede cambiar antes de confirmar
-  function nuevaLectura(producto) {
+  // stock: { fisico, disponible, pasillo, rack, gaveta } del producto en la bodega elegida.
+  // La ubicación solo se muestra; se edita en Inventario › Existencias.
+  function nuevaLectura(producto, stock) {
+    const { fisico, disponible, pasillo, rack, gaveta } = stock
     return {
-      producto,
+      producto: { ...producto, existencias: fisico, disponible, pasillo, rack, gaveta },
       cantidad: '1',
-      pasillo: producto.pasillo,
-      rack: producto.rack,
-      gaveta: producto.gaveta,
       clave: nuevaClave(),
     }
   }
@@ -157,7 +170,7 @@ export default function EscanerPage() {
     const tipo = modo.tipoMovimiento
     const { producto } = objetivo
     if (enviando.current.has(objetivo.clave)) return
-    const problema = validarCantidad(tipo, objetivo.cantidad, producto.existencias)
+    const problema = validarCantidad(tipo, objetivo.cantidad, producto.disponible)
     if (problema) {
       // Con el botón no llega aquí (está deshabilitado); con auto-envío sí, por ejemplo una salida sin stock.
       // El mensaje ya se ve bajo la cantidad (la lectura queda en pantalla), así que solo suena el error.
@@ -169,16 +182,8 @@ export default function EscanerPage() {
     setConfirmando(true)
     setErrorMovimiento(null)
     try {
-      const datos = {
-        tipo,
-        productoId: producto.id,
-        cantidad: Number(objetivo.cantidad),
-        pasillo: objetivo.pasillo.trim(),
-        rack: objetivo.rack.trim(),
-        gaveta: objetivo.gaveta.trim(),
-        documento: documento.trim(),
-      }
-      const { movimiento } = await registrarMovimiento(datos, objetivo.clave)
+      const lecturaEnviada = { producto, cantidad: Number(objetivo.cantidad), clave: objetivo.clave }
+      const movimiento = await registrarLectura(tipo, lecturaEnviada, bodega, documento.trim())
       setUltimoMovimiento(resumenMovimiento(movimiento, producto.nombre))
       const registro = { ...movimiento, nombre: producto.nombre, sku: producto.sku, clave: objetivo.clave }
       setManifiesto((anterior) => [registro, ...anterior].slice(0, MAXIMO_MANIFIESTO))
@@ -195,11 +200,29 @@ export default function EscanerPage() {
     }
   }
 
+  // Cambia un parámetro de la URL sin perder los demás (modo y bodega)
+  function cambiarParametro(nombre, valor) {
+    setParametros(
+      (actuales) => {
+        const nuevos = new URLSearchParams(actuales)
+        nuevos.set(nombre, valor)
+        return nuevos
+      },
+      { replace: true },
+    )
+  }
+
   // Cambiar de modo descarta la lectura y el documento: una entrada a medias no debe convertirse en salida,
   // y la orden de compra de una recepción no corresponde a un despacho
   function cambiarModo(clave) {
-    setParametros({ modo: clave }, { replace: true })
+    cambiarParametro('modo', clave)
     setDocumento('')
+    descartar()
+  }
+
+  // Cambiar de bodega descarta la lectura: sus existencias eran de la bodega anterior
+  function cambiarBodega(id) {
+    cambiarParametro('bodega', id)
     descartar()
   }
 
@@ -220,8 +243,11 @@ export default function EscanerPage() {
     setBuscando(true)
     try {
       const producto = await buscarProductoPorCodigo(codigo)
+      // Si no se pueden consultar las existencias, se sigue sin ellas: el servidor valida al confirmar
+      const sinDato = { fisico: null, disponible: null, pasillo: null, rack: null, gaveta: null }
+      const stock = await existenciasDeProducto(producto.id, bodega.id).catch(() => sinDato)
       if (esVieja()) return
-      const nueva = nuevaLectura(producto)
+      const nueva = nuevaLectura(producto, stock)
       setLectura(nueva)
       setErrorMovimiento(null)
       // Auto-envío: registra 1 pieza en cuanto se lee (el pitido lo da la confirmación)
@@ -273,6 +299,23 @@ export default function EscanerPage() {
     )
   }
 
+  if (!bodegas || bodegas.length === 0) {
+    return (
+      <section>
+        <h1>Escáner</h1>
+        {errorBodegas ? (
+          <p role="alert" className="escaner-error">
+            No se pudieron cargar las bodegas: {errorBodegas}
+          </p>
+        ) : bodegas ? (
+          <p className="escaner-sin-permiso">No hay bodegas activas. Se dan de alta en Configuración.</p>
+        ) : (
+          <p>Cargando bodegas…</p>
+        )}
+      </section>
+    )
+  }
+
   return (
     <section>
       <header className="escaner-encabezado">
@@ -282,6 +325,15 @@ export default function EscanerPage() {
         <div>
           <h1>Estación de escáner</h1>
           <p>Lee un código de barras o escribe el SKU. Cambia de modo con las teclas de función.</p>
+        </div>
+        <div className="escaner-bodega">
+          <Select etiqueta="Bodega" value={bodega.id} onChange={(e) => cambiarBodega(e.target.value)}>
+            {bodegas.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.codigo} · {b.nombre}
+              </option>
+            ))}
+          </Select>
         </div>
       </header>
 
@@ -363,7 +415,7 @@ export default function EscanerPage() {
 
           {lectura ? (
             <>
-              <LecturaActual lectura={lectura} onDescartar={descartar} />
+              <LecturaActual lectura={lectura} bodega={bodega} onDescartar={descartar} />
               <ConfirmacionMovimiento
                 tipo={modo.tipoMovimiento}
                 lectura={lectura}

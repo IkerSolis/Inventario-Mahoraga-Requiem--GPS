@@ -12,7 +12,8 @@ const enlaces = [
 ]
 
 export default function Layout() {
-  const { usuario, rol, cambiarRol } = useSesion()
+  const { usuario, roles, cambiarRol } = useSesion()
+  const rol = roles[0] ?? '' // clave del rol en Backend 1 ('owner', 'auditor'...); solo para el selector de prueba
 
   return (
     <div className="layout">
@@ -36,7 +37,7 @@ export default function Layout() {
               Rol de prueba{' '}
               <select value={rol} onChange={(e) => cambiarRol(e.target.value)}>
                 {ROLES.map((r) => (
-                  <option key={r.codigo} value={r.codigo}>
+                  <option key={r.clave} value={r.clave}>
                     {r.codigo} · {r.nombre}
                   </option>
                 ))}

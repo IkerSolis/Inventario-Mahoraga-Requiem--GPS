@@ -1,169 +1,173 @@
-// Simula los endpoints de productos con datos en memoria.
+// Simula /api/products y /api/categories de Backend 2 con datos en memoria.
+// Responde EXACTO como el servidor (inglés, snake_case, { ok, data, pagination }); los errores se lanzan
+// con errorHttp(estado, mensaje), igual que pedir() cuando el servidor contesta { ok: false, error }.
+// La traducción al español está en ../traductores.js, no aquí.
 import { errorHttp } from '../cliente.js'
 import { esperar } from './esperar.js'
 import { tienePermiso } from './sesion.js'
 
-const base = [
-  { nombre: 'Camiseta básica blanca', categoria: 'Playeras', marca: 'Norte', unidad: 'pieza', precio: 189 },
-  { nombre: 'Jeans regular fit', categoria: 'Pantalones', marca: 'Denim Co', unidad: 'pieza', precio: 649 },
-  { nombre: 'Sudadera con capucha', categoria: 'Sudaderas', marca: 'Norte', unidad: 'pieza', precio: 529 },
-  { nombre: 'Gorra bordada', categoria: 'Accesorios', marca: 'Urbana', unidad: 'pieza', precio: 249 },
-  { nombre: 'Chamarra impermeable', categoria: 'Chamarras', marca: 'Andes', unidad: 'pieza', precio: 1299 },
-  { nombre: 'Tenis urbanos', categoria: 'Calzado', marca: 'Paso', unidad: 'par', precio: 999 },
-  { nombre: 'Calcetines deportivos', categoria: 'Accesorios', marca: 'Paso', unidad: 'paquete', precio: 129 },
-  { nombre: 'Playera polo', categoria: 'Playeras', marca: 'Urbana', unidad: 'pieza', precio: 349 },
-  { nombre: 'Short de mezclilla', categoria: 'Pantalones', marca: 'Denim Co', unidad: 'pieza', precio: 399 },
-  { nombre: 'Cinturón de piel', categoria: 'Accesorios', marca: 'Andes', unidad: 'pieza', precio: 289 },
-  { nombre: 'Bota de trabajo', categoria: 'Calzado', marca: 'Andes', unidad: 'par', precio: 1499 },
-  { nombre: 'Chaleco acolchado', categoria: 'Chamarras', marca: 'Norte', unidad: 'pieza', precio: 799 },
-]
+const AHORA = '2026-11-01T12:00:00.000Z'
 
-const STOCK_MINIMO = 10
-
-// El backend calcula el estado de stock en la consulta comparando contra el mínimo; aquí lo imitamos
-export function calcularEstadoStock(existencias, minimo) {
-  if (existencias === 0) return 'agotado'
-  if (existencias < minimo) return 'bajo'
-  return 'disponible'
+function categoria(id, name, slug) {
+  return {
+    id,
+    business_id: 1,
+    parent_id: null,
+    name,
+    slug,
+    description: null,
+    icon_name: 'category',
+    color_hex: '#4F46E5',
+    status: 'active',
+    created_at: AHORA,
+    updated_at: AHORA,
+  }
 }
 
-// El backend genera el código de barras. Aquí: 750 (prefijo de México) + id en 9 dígitos + dígito verificador.
-// El dígito verificador es el que valida cualquier lector: suma los 12 dígitos alternando ×1 y ×3.
+export const categorias = [
+  categoria(1, 'Playeras', 'playeras'),
+  categoria(2, 'Pantalones', 'pantalones'),
+  categoria(3, 'Sudaderas', 'sudaderas'),
+  categoria(4, 'Accesorios', 'accesorios'),
+  categoria(5, 'Chamarras', 'chamarras'),
+  categoria(6, 'Calzado', 'calzado'),
+]
+
+const base = [
+  { name: 'Camiseta básica blanca', category_id: 1, unit: 'pieza', precio: 189 },
+  { name: 'Jeans regular fit', category_id: 2, unit: 'pieza', precio: 649 },
+  { name: 'Sudadera con capucha', category_id: 3, unit: 'pieza', precio: 529 },
+  { name: 'Gorra bordada', category_id: 4, unit: 'pieza', precio: 249 },
+  { name: 'Chamarra impermeable', category_id: 5, unit: 'pieza', precio: 1299 },
+  { name: 'Tenis urbanos', category_id: 6, unit: 'par', precio: 999 },
+  { name: 'Calcetines deportivos', category_id: 4, unit: 'paquete', precio: 129 },
+  { name: 'Playera polo', category_id: 1, unit: 'pieza', precio: 349 },
+  { name: 'Short de mezclilla', category_id: 2, unit: 'pieza', precio: 399 },
+  { name: 'Cinturón de piel', category_id: 4, unit: 'pieza', precio: 289 },
+  { name: 'Bota de trabajo', category_id: 6, unit: 'par', precio: 1499 },
+  { name: 'Chaleco acolchado', category_id: 5, unit: 'pieza', precio: 799 },
+]
+
+// EAN-13: 12 dígitos + dígito verificador. Suma los 12 alternando ×1 y ×3 (así lo valida cualquier lector).
 export function digitoVerificadorEan13(doceDigitos) {
   let suma = 0
   for (let i = 0; i < 12; i++) suma += Number(doceDigitos[i]) * (i % 2 === 0 ? 1 : 3)
   return (10 - (suma % 10)) % 10
 }
 
-function generarEan13(id) {
+// Los productos de ejemplo llevan un código fijo (750 + id en 9 dígitos) para que no cambie entre recargas
+function ean13DeId(id) {
   const doce = '750' + String(id).padStart(9, '0')
   return doce + digitoVerificadorEan13(doce)
 }
 
-// Exportado para el mock de movimientos, que modifica las existencias de estos mismos productos
+// Exportado para el mock de inventario, que necesita saber si un producto existe y está activo
 export const productos = Array.from({ length: 48 }, (_, i) => {
   const b = base[i % base.length]
-  const existencias = (i * 17) % 60
   return {
     id: i + 1,
-    sku: `MOD-${String(1000 + i * 7)}`,
-    codigoBarras: generarEan13(i + 1),
-    nombre: i < base.length ? b.nombre : `${b.nombre} ${Math.floor(i / base.length) + 1}`,
-    descripcion: '',
-    categoria: b.categoria,
-    marca: b.marca,
-    unidad: b.unidad,
-    precioCompra: Math.round(b.precio * 0.55),
-    precioVenta: b.precio,
-    existencias,
-    stockMinimo: STOCK_MINIMO,
-    estadoStock: calcularEstadoStock(existencias, STOCK_MINIMO),
-    pasillo: String((i % 4) + 1),
-    rack: 'ABCD'[i % 4],
-    gaveta: String((i % 6) + 1),
-    archivado: false,
-    imagen: null,
+    business_id: 1,
+    sku: `MOD-${1000 + i * 7}`,
+    name: i < base.length ? b.name : `${b.name} ${Math.floor(i / base.length) + 1}`,
+    description: null,
+    cost_price: Math.round(b.precio * 0.55),
+    sale_price: b.precio,
+    unit: b.unit,
+    category_id: b.category_id,
+    supplier_id: null,
+    // brand_id existe en Backend 2, pero no hay endpoint de marcas: la UI no lo usa por ahora
+    brand_id: null,
+    barcode: ean13DeId(i + 1),
+    qr_code: null,
+    image_url: null,
+    location: null,
+    variants: null,
+    status: 'active',
+    created_at: AHORA,
+    updated_at: AHORA,
   }
 })
 
-// Igual que el servidor: sin costs.read el costo no viaja en la respuesta
-export function quitarCostoSiNoPuede(producto) {
-  if (tienePermiso('costs.read')) return producto
-  const { precioCompra, ...sinCosto } = producto
-  return sinCosto
+function exigirPermiso(permiso) {
+  if (!tienePermiso(permiso)) throw errorHttp(403, `Acceso denegado: Se requiere el permiso '${permiso}'.`)
 }
 
-// Minúsculas y sin acentos, para que "cinturon" encuentre "Cinturón"
-function normalizar(texto) {
-  return texto
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
+// Igual que el servidor: sin costs.read no viaja cost_price
+function sinCostoSiNoPuede(fila, puedeVerCosto = tienePermiso('costs.read')) {
+  const copia = { ...fila }
+  if (!puedeVerCosto) delete copia.cost_price
+  return copia
 }
 
-// Los filtros vacíos ('' o undefined) no filtran nada.
-// Por defecto solo trae los activos; con archivados: true trae solo los archivados.
-export function listarProductos({
-  pagina = 1,
-  porPagina = 25,
-  busqueda,
-  categoria,
-  estadoStock,
-  archivados = false,
-} = {}) {
-  const texto = normalizar(busqueda ?? '').trim()
-  const filtrados = productos.filter(
-    (p) =>
-      p.archivado === archivados &&
-      (!texto || normalizar(p.nombre).includes(texto) || normalizar(p.sku).includes(texto)) &&
-      (!categoria || p.categoria === categoria) &&
-      (!estadoStock || p.estadoStock === estadoStock),
-  )
+function buscarFila(id) {
+  const fila = productos.find((p) => p.id === Number(id))
+  if (!fila) throw errorHttp(404, 'Producto no encontrado en esta empresa.')
+  return fila
+}
+
+// GET /api/products?page=&limit=&search=&category_id=&brand_id=&status=
+// search compara (sin distinguir mayúsculas, con LIKE) contra sku, name y barcode
+export async function listar({ page = 1, limit = 10, search, category_id, brand_id, status = 'active' } = {}) {
+  exigirPermiso('products.read')
+  const pagina = Number(page)
+  const porPagina = Number(limit)
+  if (porPagina < 1 || porPagina > 100) throw errorHttp(400, 'Parámetros de búsqueda inválidos')
+
+  const texto = (search ?? '').trim().toLowerCase()
+  const filtrados = productos
+    .filter(
+      (p) =>
+        (status === 'all' || p.status === status) &&
+        (!category_id || p.category_id === Number(category_id)) &&
+        (!brand_id || p.brand_id === Number(brand_id)) &&
+        (!texto ||
+          p.sku.toLowerCase().includes(texto) ||
+          p.name.toLowerCase().includes(texto) ||
+          (p.barcode ?? '').toLowerCase().includes(texto)),
+    )
+    .sort((a, b) => b.id - a.id) // el servidor ordena por id descendente
 
   const inicio = (pagina - 1) * porPagina
   return esperar({
-    elementos: filtrados.slice(inicio, inicio + porPagina).map(quitarCostoSiNoPuede),
-    total: filtrados.length,
+    ok: true,
+    data: filtrados.slice(inicio, inicio + porPagina).map((p) => sinCostoSiNoPuede(p)),
+    pagination: {
+      page: pagina,
+      limit: porPagina,
+      total: filtrados.length,
+      totalPages: Math.ceil(filtrados.length / porPagina),
+    },
   })
 }
 
-export async function obtenerProducto(id) {
-  const producto = productos.find((p) => p.id === id)
-  if (!producto) throw new Error('El producto no existe')
-  return esperar(quitarCostoSiNoPuede(producto))
+// GET /api/products/:id (también devuelve archivados)
+export async function obtener(id) {
+  exigirPermiso('products.read')
+  return esperar({ ok: true, data: sinCostoSiNoPuede(buscarFila(id)) })
 }
 
-// Busca por código de barras o por SKU (lo que lea el escáner o escriba el usuario)
-export async function buscarProductoPorCodigo(codigo) {
-  const buscado = codigo.trim().toUpperCase()
-  const producto = productos.find((p) => p.codigoBarras === buscado || p.sku.toUpperCase() === buscado)
-  if (!producto) throw errorHttp(404, `No existe un producto con el código ${codigo.trim()}`)
-  if (producto.archivado) throw errorHttp(409, `${producto.nombre} está archivado; restáuralo para moverlo`)
-  return esperar(quitarCostoSiNoPuede(producto))
-}
-
-// Igual que el servidor: los campos sin permiso se ignoran aunque vengan en la petición
-function quitarCamposSinPermiso(datos) {
-  const permitidos = { ...datos }
-  if (!tienePermiso('costs.read')) delete permitidos.precioCompra
-  if (!tienePermiso('prices.manage')) delete permitidos.precioVenta
-  return permitidos
-}
-
-function exigirPermiso(permiso) {
-  if (!tienePermiso(permiso)) throw new Error(`No tienes permiso (${permiso})`)
-}
-
-export async function crearProducto(datos) {
-  exigirPermiso('products.create')
-  const id = Math.max(...productos.map((p) => p.id)) + 1
-  const nuevo = {
-    precioVenta: 0, // si quien crea no gestiona precios, queda en 0 hasta que alguien con prices.manage lo asigne
-    precioCompra: 0,
-    ...quitarCamposSinPermiso(datos),
-    id,
-    sku: `MOD-${String(2000 + productos.length)}`, // el backend genera el SKU y el código de barras
-    codigoBarras: generarEan13(id),
-    existencias: 0, // las existencias solo cambian con movimientos de inventario
-    archivado: false,
-    imagen: null,
+function revisarDuplicados(datos, idPropio) {
+  const otro = (campo) => productos.find((p) => p.id !== idPropio && datos[campo] && p[campo] === datos[campo])
+  if (otro('sku')) throw errorHttp(409, `Ya existe un producto con el SKU '${datos.sku}' en tu empresa.`)
+  if (otro('barcode')) {
+    throw errorHttp(409, `Ya existe un producto con el código de barras '${datos.barcode}' en tu empresa.`)
   }
-  nuevo.estadoStock = calcularEstadoStock(nuevo.existencias, nuevo.stockMinimo)
-  productos.unshift(nuevo) // al inicio, para que se vea en la primera página
-  return esperar(quitarCostoSiNoPuede(nuevo))
 }
 
-export async function actualizarProducto(id, datos) {
-  exigirPermiso('products.update')
-  const producto = productos.find((p) => p.id === id)
-  if (!producto) throw new Error('El producto no existe')
-
-  Object.assign(producto, quitarCamposSinPermiso(datos))
-  producto.estadoStock = calcularEstadoStock(producto.existencias, producto.stockMinimo)
-  return esperar(quitarCostoSiNoPuede(producto))
+// Validación básica, como el esquema Zod del servidor
+function validar(datos, esNuevo) {
+  const problemas = []
+  if (esNuevo || 'sku' in datos) if (!datos.sku || datos.sku.trim().length < 2) problemas.push('sku')
+  if (esNuevo || 'name' in datos) if (!datos.name || datos.name.trim().length < 2) problemas.push('name')
+  for (const campo of ['cost_price', 'sale_price']) {
+    if (campo in datos && (Number.isNaN(Number(datos[campo])) || Number(datos[campo]) < 0)) problemas.push(campo)
+  }
+  if (problemas.length > 0) {
+    throw errorHttp(400, `Error de validación en los campos del producto: ${problemas.join(', ')}.`)
+  }
 }
 
-// El servidor real guardaría el archivo y devolvería su URL; en el mock basta guardarlo como data URL
+// El servidor guarda el archivo y responde su URL en /uploads; el mock lo guarda como data URL
 function leerComoDataUrl(archivo) {
   return new Promise((resolver, rechazar) => {
     const lector = new FileReader()
@@ -173,38 +177,101 @@ function leerComoDataUrl(archivo) {
   })
 }
 
-export async function subirImagenProducto(id, archivo) {
-  if (!tienePermiso('products.create') && !tienePermiso('products.update')) {
-    throw new Error('No tienes permiso (products.update)')
+// Igual que Multer en el servidor: solo PNG o JPG de hasta 5 MB
+async function urlDeImagen(archivo) {
+  if (!['image/png', 'image/jpeg', 'image/jpg'].includes(archivo.type)) {
+    throw errorHttp(400, 'Solo se permiten imágenes PNG o JPG.')
   }
-  // El servidor valida por su cuenta, aunque el formulario ya lo haya hecho
-  if (!['image/png', 'image/jpeg'].includes(archivo.type)) throw new Error('Solo se aceptan imágenes PNG o JPG')
-  if (archivo.size > 2 * 1024 * 1024) throw new Error('La imagen pesa más de 2 MB')
-
-  const producto = productos.find((p) => p.id === id)
-  if (!producto) throw new Error('El producto no existe')
-  producto.imagen = await leerComoDataUrl(archivo)
-  return esperar(quitarCostoSiNoPuede(producto))
+  if (archivo.size > 5 * 1024 * 1024) throw errorHttp(400, 'El archivo supera el límite máximo permitido de 5MB.')
+  return leerComoDataUrl(archivo)
 }
 
-// Archivar no borra: el producto conserva su historial (kardex) y se puede restaurar
-async function cambiarArchivado(id, archivado) {
+// POST /api/products (JSON, o multipart con el campo image). cuerpo ya viene en snake_case.
+export async function crear(cuerpo, imagen) {
+  exigirPermiso('products.create')
+  validar(cuerpo, true)
+  revisarDuplicados(cuerpo)
+  const nuevo = {
+    id: Math.max(...productos.map((p) => p.id)) + 1,
+    business_id: 1,
+    description: null,
+    cost_price: 0,
+    sale_price: 0,
+    unit: 'pieza',
+    category_id: null,
+    supplier_id: null,
+    brand_id: null,
+    barcode: null,
+    qr_code: null,
+    image_url: null,
+    location: null,
+    variants: null,
+    status: 'active',
+    ...cuerpo,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+  if (imagen) nuevo.image_url = await urlDeImagen(imagen)
+  productos.push(nuevo)
+  // Backend 2 responde el producto creado con cost_price aunque no se tenga costs.read (pendiente de corregir allá)
+  return esperar({ ok: true, message: 'Producto creado exitosamente.', data: sinCostoSiNoPuede(nuevo, true) })
+}
+
+// PUT /api/products/:id (parcial: solo cambia lo que viene)
+export async function actualizar(id, cuerpo, imagen) {
+  exigirPermiso('products.update')
+  const fila = productos.find((p) => p.id === Number(id))
+  if (!fila) throw errorHttp(404, 'El producto especificado no fue encontrado.')
+  validar(cuerpo, false)
+  revisarDuplicados(cuerpo, fila.id)
+  const imagenNueva = imagen ? await urlDeImagen(imagen) : null
+  Object.assign(fila, cuerpo, { updated_at: new Date().toISOString() })
+  if (imagenNueva) fila.image_url = imagenNueva
+  // Igual que en crear: Backend 2 manda cost_price aquí sin revisar costs.read
+  return esperar({ ok: true, message: 'Producto actualizado exitosamente.', data: sinCostoSiNoPuede(fila, true) })
+}
+
+// PATCH /api/products/:id/archive. No regresa el producto, solo su id y estado.
+export async function archivar(id) {
   exigirPermiso('products.archive')
-  const producto = productos.find((p) => p.id === id)
-  if (!producto) throw new Error('El producto no existe')
-  producto.archivado = archivado
-  return esperar(quitarCostoSiNoPuede(producto))
+  const fila = productos.find((p) => p.id === Number(id))
+  if (!fila) throw errorHttp(404, 'El producto especificado no fue encontrado.')
+  fila.status = 'archived'
+  fila.updated_at = new Date().toISOString()
+  return esperar({
+    ok: true,
+    message: 'Producto archivado exitosamente. No se eliminó de la BD para preservar el historial del Kardex.',
+    id: fila.id,
+    status: 'archived',
+  })
 }
 
-export function archivarProducto(id) {
-  return cambiarArchivado(id, true)
+// GET /api/products/generate/sku?prefix= → PREFIJO-0049 (consecutivo según cuántos productos hay)
+export async function generarSku(prefix = 'SKU') {
+  exigirPermiso('products.create')
+  const prefijo =
+    String(prefix)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .slice(0, 8) || 'SKU'
+  let numero = productos.length + 1
+  while (productos.some((p) => p.sku === `${prefijo}-${String(numero).padStart(4, '0')}`)) numero++
+  return esperar({ ok: true, sku: `${prefijo}-${String(numero).padStart(4, '0')}` })
 }
 
-export function restaurarProducto(id) {
-  return cambiarArchivado(id, false)
+// GET /api/products/generate/barcode?type=ean13 → 750 + 9 dígitos al azar + verificador
+export async function generarCodigoBarras() {
+  exigirPermiso('products.create')
+  let doce = '750'
+  for (let i = 0; i < 9; i++) doce += Math.floor(Math.random() * 10)
+  return esperar({ ok: true, type: 'ean13', barcode: doce + digitoVerificadorEan13(doce) })
 }
 
-export function listarCategorias() {
-  const nombres = new Set(productos.map((p) => p.categoria))
-  return esperar([...nombres].sort())
+// GET /api/categories?status= (lista plana; el servidor también acepta tree=true)
+export async function listarCategorias({ status = 'all' } = {}) {
+  exigirPermiso('products.read')
+  const data = categorias
+    .filter((c) => status === 'all' || c.status === status)
+    .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+  return esperar({ ok: true, data: data.map((c) => ({ ...c })) })
 }

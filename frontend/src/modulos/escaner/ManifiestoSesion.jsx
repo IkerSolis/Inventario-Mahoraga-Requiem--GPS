@@ -50,16 +50,12 @@ const columnas = [
     alinear: 'derecha',
     render: (m) => `${m.existenciasAntes} → ${m.existenciasDespues}`,
   },
-  {
-    clave: 'ubicacion',
-    titulo: 'Ubicación',
-    render: (m) => `Pasillo ${m.pasillo || '—'} · Rack ${m.rack || '—'} · Gaveta ${m.gaveta || '—'}`,
-  },
+  { clave: 'bodega', titulo: 'Bodega', render: (m) => m.bodega || '—' },
   { clave: 'documento', titulo: 'Documento', render: (m) => m.documento || '—' },
 ]
 
 // "Manifiesto de remesa activa": los movimientos confirmados en esta sesión, el más reciente primero.
-// movimientos: lo que respondió el servidor, más el nombre y SKU del producto y la clave de idempotencia.
+// movimientos: lo que arma registrarLectura.js, más el nombre y SKU del producto y la clave de idempotencia.
 export default function ManifiestoSesion({ movimientos }) {
   const resumen = resumirManifiesto(movimientos)
 

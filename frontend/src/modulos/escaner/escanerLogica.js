@@ -48,10 +48,11 @@ export function modoPorTecla(tecla, permitidos) {
 
 // ¿El código leído es del producto que ya está en pantalla? (por código de barras o por SKU)
 // Sirve para que leer otra vez la misma pieza sume 1 en lugar de buscarla de nuevo.
+// El código de barras es opcional en el backend, así que puede venir en null.
 export function esMismoProducto(codigo, producto) {
   if (!producto) return false
   const limpio = codigo.trim().toUpperCase()
-  return limpio === producto.codigoBarras || limpio === producto.sku.toUpperCase()
+  return (producto.codigoBarras != null && limpio === producto.codigoBarras) || limpio === producto.sku.toUpperCase()
 }
 
 // Botones de suma rápida de la confirmación
@@ -71,13 +72,16 @@ export function totalNuevo(tipo, existencias, cantidad) {
 }
 
 // Validación en el cliente, para avisar antes de enviar. El servidor vuelve a validar.
+// La cantidad es entera en la UI, aunque el servidor acepta hasta dos decimales.
+// disponible: lo que se puede sacar (físico − reservado). Si es null (no se pudo consultar),
+// no se revisa aquí y el servidor responde 409 si no alcanza.
 // Devuelve el mensaje de error, o null si se puede confirmar.
-export function validarCantidad(tipo, texto, existencias) {
+export function validarCantidad(tipo, texto, disponible) {
   const cantidad = Number(texto)
   if (texto.trim() === '' || !Number.isInteger(cantidad)) return 'Escribe una cantidad entera'
   if (tipo === 'conteo') return cantidad < 0 ? 'La cantidad contada no puede ser negativa' : null
   if (cantidad < 1) return 'La cantidad debe ser al menos 1'
-  if (tipo === 'salida' && cantidad > existencias) return `Solo hay ${existencias} en stock`
+  if (tipo === 'salida' && disponible != null && cantidad > disponible) return `Solo hay ${disponible} disponibles`
   return null
 }
 
@@ -102,11 +106,13 @@ export function textoDiferencia(diferencia) {
   return '0'
 }
 
-// Mensaje después de confirmar. movimiento es la respuesta del servidor.
+// Mensaje después de confirmar. movimiento: el registro que arma registrarLectura.js con la respuesta.
+// En un conteo con diferencia el servidor crea un ajuste pendiente: el stock no cambia hasta que se apruebe.
 export function resumenMovimiento(movimiento, nombreProducto) {
   const { tipo, cantidad, existenciasAntes, existenciasDespues, diferencia } = movimiento
   if (tipo === 'conteo') {
-    const detalle = diferencia === 0 ? 'sin diferencia' : `diferencia ${textoDiferencia(diferencia)}`
+    const detalle =
+      diferencia === 0 ? 'sin diferencia' : `diferencia ${textoDiferencia(diferencia)}, ajuste pendiente de aprobación`
     return `Conteo registrado: ${nombreProducto}, ${cantidad} contadas (sistema ${existenciasAntes}, ${detalle}).`
   }
   const nombre = tipo === 'entrada' ? 'Entrada registrada' : 'Salida registrada'

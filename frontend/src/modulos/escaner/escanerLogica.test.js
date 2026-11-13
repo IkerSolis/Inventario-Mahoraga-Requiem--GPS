@@ -55,6 +55,12 @@ describe('esMismoProducto', () => {
     expect(esMismoProducto('7500000000022', producto)).toBe(false)
     expect(esMismoProducto('7500000000015', null)).toBe(false)
   })
+
+  test('un producto sin código de barras se reconoce solo por SKU', () => {
+    const sinCodigo = { codigoBarras: null, sku: 'MOD-1000' }
+    expect(esMismoProducto('MOD-1000', sinCodigo)).toBe(true)
+    expect(esMismoProducto('', sinCodigo)).toBe(false)
+  })
 })
 
 describe('confirmación de movimientos', () => {
@@ -75,7 +81,8 @@ describe('confirmación de movimientos', () => {
     expect(validarCantidad('entrada', '0', 5)).toBe('La cantidad debe ser al menos 1')
     expect(validarCantidad('entrada', '', 5)).toBe('Escribe una cantidad entera')
     expect(validarCantidad('entrada', '2.5', 5)).toBe('Escribe una cantidad entera')
-    expect(validarCantidad('salida', '6', 5)).toBe('Solo hay 5 en stock')
+    expect(validarCantidad('salida', '6', 5)).toBe('Solo hay 5 disponibles')
+    expect(validarCantidad('salida', '6', null)).toBeNull() // sin dato de existencias, decide el servidor
     expect(validarCantidad('salida', '5', 5)).toBeNull()
     expect(validarCantidad('conteo', '0', 5)).toBeNull()
     expect(validarCantidad('conteo', '-1', 5)).toBe('La cantidad contada no puede ser negativa')
@@ -101,7 +108,11 @@ describe('textos de movimientos', () => {
     expect(resumenMovimiento(entrada, 'Jeans')).toBe('Entrada registrada: Jeans +10 (17 → 27).')
     const conteo = { tipo: 'conteo', cantidad: 15, existenciasAntes: 17, existenciasDespues: 17, diferencia: -2 }
     expect(resumenMovimiento(conteo, 'Jeans')).toBe(
-      'Conteo registrado: Jeans, 15 contadas (sistema 17, diferencia −2).',
+      'Conteo registrado: Jeans, 15 contadas (sistema 17, diferencia −2, ajuste pendiente de aprobación).',
+    )
+    const exacto = { ...conteo, cantidad: 17, diferencia: 0 }
+    expect(resumenMovimiento(exacto, 'Jeans')).toBe(
+      'Conteo registrado: Jeans, 17 contadas (sistema 17, sin diferencia).',
     )
   })
 })
