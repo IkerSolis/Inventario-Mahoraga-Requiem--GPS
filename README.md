@@ -53,8 +53,9 @@ La variable `VITE_USE_MOCK` decide de dónde salen los datos:
 
 Para cambiarla solo en tu máquina, copia `frontend/.env.example` como `frontend/.env.local` y edítalo.
 
-Los formatos de respuesta que espera el frontend están anotados como **contrato provisional** al inicio de cada
-archivo de `frontend/src/api/` (por ejemplo `frontend/src/api/productos.js`), para revisarlos con Backend 2.
+Los mocks responden con la misma forma que los backends (inglés, snake_case, `{ ok, data, pagination }`).
+`frontend/src/api/traductores.js` pasa esas respuestas al español que usa la interfaz; cada archivo de
+`frontend/src/api/` anota la ruta, el permiso y los campos de cada endpoint.
 
 ## Estructura
 
@@ -67,7 +68,7 @@ frontend/
     modulos/
       productos/    Catálogo, detalle, formulario y acciones de productos
       escaner/      Escáner: lector USB, cámara o imagen; entradas, salidas y conteos
-      inventario/   Inventario (pendiente)
+      inventario/   Existencias, movimientos, kardex y ajustes
     styles/         Tokens de diseño (colores, radios, fuente) y estilos globales
 ```
 
@@ -78,3 +79,22 @@ códigos de barras de los productos simulados, para escanearlos desde la pantall
 
 La interfaz pregunta por permisos, nunca por roles: `puede('costs.read')`. Solo oculta o deshabilita lo que el
 usuario no puede hacer; quien autoriza de verdad es el servidor.
+
+## Pendientes
+
+Frontend (Inventario):
+
+- Formulario de movimientos (transferencias y devoluciones) y botón "Recibir" para transferencias en tránsito.
+  Las funciones ya están en `frontend/src/api/inventario.js`.
+- Pantalla de conteos cíclicos (por ahora el conteo se hace desde el escáner, modo F3).
+- Editar mínimo, máximo y ubicación por bodega (`POST /inventory/levels`; en la interfaz pedirá `products.update`).
+
+Para alinear con Backend 2:
+
+- Movimientos: el servidor pide `stock.movement.create`, que no existe en los permisos de Backend 1. La interfaz
+  usa `stock.receive`, `stock.issue` y `stock.transfer`.
+- `POST /inventory/levels` pide `stock.read`; debería pedir `products.update`.
+- Rechazar ajustes: falta `POST /inventory/adjustments/:id/reject` (la interfaz ya lo usa).
+- Búsqueda exacta por código para el escáner (hoy se filtra en el cliente sobre `?search=`).
+- Crear y editar productos devuelve `cost_price` aunque no se tenga `costs.read`.
+- Usar la sesión de Backend 1 (cookie `access_token`) en lugar de los encabezados de prueba.

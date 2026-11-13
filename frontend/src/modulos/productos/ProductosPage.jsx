@@ -14,21 +14,20 @@ import ProductoImagen from './ProductoImagen.jsx'
 import ProductoModal from './ProductoModal.jsx'
 import ProductoTarjetas from './ProductoTarjetas.jsx'
 import { resumirLote } from './productoLote.js'
-import { ESTADOS_STOCK, formatoDinero } from './productoFormato.js'
+import { ESTADOS_STOCK, SIN_DATO, formatoDinero, nombreCategoria } from './productoFormato.js'
 import './productos.css'
 import './ProductosPage.css'
 
 export default function ProductosPage() {
   const puede = usePuede()
 
-  // Búsqueda, filtros, página, "Ver archivados" y la vista viven en la URL (?q=...&categoria=...&pagina=2),
+  // Búsqueda, filtros, página, "Ver archivados" y la vista viven en la URL (?q=...&categoria=3&pagina=2),
   // así se conservan al volver del detalle y se pueden compartir como enlace.
   const [parametros, setParametros] = useSearchParams()
   const pagina = Number(parametros.get('pagina')) || 1
   const porPagina = Number(parametros.get('porPagina')) || 25
   const busqueda = parametros.get('q') ?? ''
-  const categoria = parametros.get('categoria') ?? ''
-  const estadoStock = ESTADOS_STOCK[parametros.get('estado')] ? parametros.get('estado') : ''
+  const categoria = parametros.get('categoria') ?? '' // id de la categoría, como texto
   const verArchivados = parametros.get('archivados') === '1'
   const vista = parametros.get('vista') === 'tarjetas' ? 'tarjetas' : 'lista'
 
@@ -69,9 +68,9 @@ export default function ProductosPage() {
 
   // "texto" es lo que se escribe; pasa a la URL (?q=) 300 ms después de dejar de escribir
   const [texto, setTexto] = useState(busqueda)
-  const [categorias, setCategorias] = useState([])
+  const [categorias, setCategorias] = useState([]) // [{ id, nombre }]
   const buscador = useRef(null)
-  const hayFiltros = Boolean(busqueda || categoria || estadoStock)
+  const hayFiltros = Boolean(busqueda || categoria)
 
   useEffect(() => {
     const espera = setTimeout(() => {
@@ -106,13 +105,13 @@ export default function ProductosPage() {
 
   function limpiarFiltros() {
     setTexto('')
-    cambiarFiltros({ q: '', categoria: '', estado: '' })
+    cambiarFiltros({ q: '', categoria: '' })
   }
 
   // Cada respuesta guarda la "clave" de los filtros con que se pidió.
   // Si no coincide con los filtros actuales, es que la nueva todavía viene en camino: eso es "cargando".
   // Mientras tanto se siguen mostrando los datos anteriores.
-  const clave = [pagina, porPagina, busqueda, categoria, estadoStock, verArchivados, recargas].join('|')
+  const clave = [pagina, porPagina, busqueda, categoria, verArchivados, recargas].join('|')
   const [respuesta, setRespuesta] = useState({ clave: null, datos: null, error: null })
   const cargando = respuesta.clave !== clave
   const datos = respuesta.datos
@@ -121,7 +120,7 @@ export default function ProductosPage() {
   useEffect(() => {
     // Si cambian de página o de filtro rápido, ignoramos la respuesta vieja que llegue tarde
     let vigente = true
-    listarProductos({ pagina, porPagina, busqueda, categoria, estadoStock, archivados: verArchivados })
+    listarProductos({ pagina, porPagina, busqueda, categoriaId: categoria, archivados: verArchivados })
       .then((nuevos) => {
         if (vigente) setRespuesta({ clave, datos: nuevos, error: null })
       })
@@ -131,7 +130,7 @@ export default function ProductosPage() {
     return () => {
       vigente = false
     }
-  }, [clave, pagina, porPagina, busqueda, categoria, estadoStock, verArchivados])
+  }, [clave, pagina, porPagina, busqueda, categoria, verArchivados])
 
   function abrirFormulario(idProducto) {
     setAviso(null)
@@ -159,11 +158,13 @@ export default function ProductosPage() {
     else alTerminar(aviso.texto, aviso.tipo)
   }
 
-  // En archivados la única acción es restaurar; en activos, editar y archivar
-  const hayAcciones = verArchivados ? puede('products.archive') : puede('products.update') || puede('products.archive')
+  // En archivados la única acción es restaurar; en activos, editar y archivar.
+  // Restaurar es un PUT { status: 'active' } en Backend 2, así que pide products.update (no products.archive).
+  const puedeAccionLote = verArchivados ? puede('products.update') : puede('products.archive')
+  const hayAcciones = verArchivados ? puede('products.update') : puede('products.update') || puede('products.archive')
 
-  // Las acciones en lote (archivar / restaurar varios) son de products.archive y solo están en la vista de lista
-  const puedeSeleccionar = puede('products.archive') && vista === 'lista'
+  // Las acciones en lote (archivar / restaurar varios) solo están en la vista de lista
+  const puedeSeleccionar = puedeAccionLote && vista === 'lista'
   const productosSeleccionados = datos ? datos.elementos.filter((p) => seleccionados.includes(p.id)) : []
 
   // Botones de cada producto; los usan igual la tabla y las tarjetas
@@ -224,18 +225,24 @@ export default function ProductosPage() {
         </div>
       ),
     },
-    { clave: 'categoria', titulo: 'Categoría', render: (p) => <Badge tono="info">{p.categoria}</Badge> },
     {
-      clave: 'ubicacion',
-      titulo: 'Ubicación',
-      render: (p) => `Pasillo ${p.pasillo} · Rack ${p.rack} · Gaveta ${p.gaveta}`,
+      clave: 'categoria',
+      titulo: 'Categoría',
+      render: (p) => <Badge tono="info">{nombreCategoria(categorias, p.categoriaId)}</Badge>,
     },
-    { clave: 'existencias', titulo: 'Existencias', alinear: 'derecha' },
+    // /products no trae existencias (son por bodega): se muestra "—"; el detalle está en Inventario › Existencias
+    {
+      clave: 'existencias',
+      titulo: 'Existencias',
+      alinear: 'derecha',
+      render: (p) => p.existencias ?? SIN_DATO,
+    },
     {
       clave: 'estadoStock',
       titulo: 'Estado',
       render: (p) => {
         const estado = ESTADOS_STOCK[p.estadoStock]
+        if (!estado) return SIN_DATO
         return (
           <Badge tono={estado.tono} punto>
             {estado.texto}
@@ -351,36 +358,16 @@ export default function ProductosPage() {
             onChange={(e) => cambiarFiltros({ categoria: e.target.value })}
           >
             <option value="">Todas</option>
-            {categorias.map((nombre) => (
-              <option key={nombre} value={nombre}>
-                {nombre}
+            {categorias.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
               </option>
             ))}
           </Select>
         </div>
 
+        {/* El filtro por estado de stock está en Inventario › Existencias: /products no lo maneja */}
         <div className="productos-filtros-fila">
-          <div className="productos-chips" role="group" aria-label="Estado de stock">
-            <button
-              type="button"
-              className="productos-chip"
-              aria-pressed={estadoStock === ''}
-              onClick={() => cambiarFiltros({ estado: '' })}
-            >
-              Todos
-            </button>
-            {Object.entries(ESTADOS_STOCK).map(([valor, estado]) => (
-              <button
-                key={valor}
-                type="button"
-                className={`productos-chip productos-chip-${estado.tono}`}
-                aria-pressed={estadoStock === valor}
-                onClick={() => cambiarFiltros({ estado: valor })}
-              >
-                {estado.texto}
-              </button>
-            ))}
-          </div>
           <div className="productos-acciones">
             {hayFiltros && (
               <Boton variante="secundario" icono="filter_alt_off" onClick={limpiarFiltros}>
@@ -414,6 +401,7 @@ export default function ProductosPage() {
           {vista === 'tarjetas' ? (
             <ProductoTarjetas
               productos={datos.elementos}
+              categorias={categorias}
               mostrarCosto={puede('costs.read')}
               filtrosLista={filtrosLista}
               renderAcciones={hayAcciones ? renderAcciones : null}

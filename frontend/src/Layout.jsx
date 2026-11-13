@@ -2,17 +2,27 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { usarMock } from './api/cliente.js'
 import { ROLES } from './api/mock/sesion.js'
 import { useSesion } from './auth/SesionContext.jsx'
+import { usePuede } from './auth/usePuede.js'
 import './Layout.css'
 
 // shortcut: layout mínimo para navegar mis módulos; se reemplaza cuando Frontend 1 entregue sidebar y navbar
-const enlaces = [
-  { ruta: '/productos', texto: 'Productos', icono: 'inventory_2' },
-  { ruta: '/escaner', texto: 'Escáner', icono: 'barcode_scanner' },
-  { ruta: '/inventario', texto: 'Inventario', icono: 'warehouse' },
+// permisos: el enlace se muestra si se tiene alguno (los mismos que pide la ruta en App.jsx)
+const ENLACES = [
+  { ruta: '/productos', texto: 'Productos', icono: 'inventory_2', permisos: ['products.read'] },
+  {
+    ruta: '/escaner',
+    texto: 'Escáner',
+    icono: 'barcode_scanner',
+    permisos: ['stock.receive', 'stock.issue', 'stock.count'],
+  },
+  { ruta: '/inventario', texto: 'Inventario', icono: 'warehouse', permisos: ['stock.read'] },
 ]
 
 export default function Layout() {
-  const { usuario, rol, cambiarRol } = useSesion()
+  const { usuario, roles, cambiarRol } = useSesion()
+  const puede = usePuede()
+  const enlaces = ENLACES.filter((enlace) => enlace.permisos.some(puede))
+  const rol = roles[0] ?? '' // clave del rol en Backend 1 ('owner', 'auditor'...); solo para el selector de prueba
 
   return (
     <div className="layout">
@@ -36,7 +46,7 @@ export default function Layout() {
               Rol de prueba{' '}
               <select value={rol} onChange={(e) => cambiarRol(e.target.value)}>
                 {ROLES.map((r) => (
-                  <option key={r.codigo} value={r.codigo}>
+                  <option key={r.clave} value={r.clave}>
                     {r.codigo} · {r.nombre}
                   </option>
                 ))}

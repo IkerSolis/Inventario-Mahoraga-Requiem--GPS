@@ -37,7 +37,8 @@ export default function CodigosPrueba() {
 
   useEffect(() => {
     listarProductos({ pagina: 1, porPagina: 100 })
-      .then((respuesta) => setProductos(respuesta.elementos))
+      // Solo los que tienen un EAN-13 (el código de barras es opcional en el backend)
+      .then((respuesta) => setProductos(respuesta.elementos.filter((p) => /^\d{13}$/.test(p.codigoBarras ?? ''))))
       .catch((e) => setError(e.message))
   }, [])
 

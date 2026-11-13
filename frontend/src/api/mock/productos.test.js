@@ -1,108 +1,80 @@
-import { describe, expect, test } from 'vitest'
-import {
-  actualizarProducto,
-  archivarProducto,
-  crearProducto,
-  listarProductos,
-  obtenerProducto,
-  restaurarProducto,
-} from './productos.js'
+import { beforeEach, describe, expect, test } from 'vitest'
+import { archivar, actualizar, crear, generarSku, listar, listarCategorias, obtener } from './productos.js'
 import { obtenerSesion } from './sesion.js'
 
-describe('mock de productos', () => {
-  test('sin costs.read la respuesta no trae el costo', async () => {
-    await obtenerSesion('R6')
-    const { elementos } = await listarProductos()
-    expect(elementos.every((p) => !('precioCompra' in p))).toBe(true)
+// El mock debe responder EXACTO como Backend 2: inglés, snake_case y { ok, data, pagination }
+describe('mock de /products', () => {
+  beforeEach(() => obtenerSesion('owner'))
+
+  test('la lista viene paginada como el servidor', async () => {
+    const respuesta = await listar({ page: 2, limit: 10 })
+    expect(respuesta.ok).toBe(true)
+    expect(respuesta.data).toHaveLength(10)
+    expect(respuesta.pagination).toEqual({ page: 2, limit: 10, total: expect.any(Number), totalPages: 5 })
+    expect(Object.keys(respuesta.data[0])).toEqual(
+      expect.arrayContaining([
+        'sku',
+        'name',
+        'barcode',
+        'cost_price',
+        'sale_price',
+        'category_id',
+        'status',
+        'image_url',
+      ]),
+    )
   })
 
-  test('la búsqueda ignora mayúsculas y acentos, y busca también por SKU', async () => {
-    const porNombre = await listarProductos({ busqueda: 'CINTURON' })
-    expect(porNombre.total).toBeGreaterThan(0)
-    expect(porNombre.elementos.every((p) => p.nombre.startsWith('Cinturón'))).toBe(true)
-
-    const porSku = await listarProductos({ busqueda: 'mod-1000' })
-    expect(porSku.elementos.map((p) => p.sku)).toEqual(['MOD-1000'])
+  test('sin costs.read no viaja cost_price', async () => {
+    await obtenerSesion('sales')
+    const { data } = await listar({ limit: 100 })
+    expect(data.every((p) => !('cost_price' in p))).toBe(true)
+    expect('cost_price' in (await obtener(1)).data).toBe(false)
   })
 
-  test('los filtros se combinan y el total cuenta solo lo filtrado', async () => {
-    const { elementos, total } = await listarProductos({
-      categoria: 'Calzado',
-      estadoStock: 'disponible',
-      porPagina: 100,
-    })
-    expect(total).toBe(elementos.length)
-    expect(elementos.every((p) => p.categoria === 'Calzado' && p.estadoStock === 'disponible')).toBe(true)
+  test('search busca en SKU, nombre y código de barras, sin distinguir mayúsculas', async () => {
+    expect((await listar({ search: 'mod-1000' })).data.map((p) => p.sku)).toEqual(['MOD-1000'])
+    expect((await listar({ search: 'CINTURÓN' })).data.every((p) => p.name.startsWith('Cinturón'))).toBe(true)
+    expect((await listar({ search: '7500000000015' })).data.map((p) => p.id)).toEqual([1])
   })
 
-  test('con costs.read la respuesta sí trae el costo', async () => {
-    await obtenerSesion('R0')
-    const { elementos } = await listarProductos()
-    expect(elementos.every((p) => typeof p.precioCompra === 'number')).toBe(true)
-  })
-})
-
-describe('mock de crear y actualizar', () => {
-  const datos = {
-    nombre: 'Producto nuevo',
-    descripcion: '',
-    categoria: 'Calzado',
-    marca: '',
-    unidad: 'par',
-    precioCompra: 50,
-    precioVenta: 120,
-    stockMinimo: 5,
-    pasillo: '1',
-    rack: 'A',
-    gaveta: '1',
-  }
-
-  test('sin products.create se rechaza', async () => {
-    await obtenerSesion('R6')
-    await expect(crearProducto(datos)).rejects.toThrow('products.create')
+  test('filtra por categoría y por estado', async () => {
+    const { data, pagination } = await listar({ category_id: 6, limit: 100 })
+    expect(pagination.total).toBe(data.length)
+    expect(data.every((p) => p.category_id === 6)).toBe(true)
   })
 
-  test('sin prices.manage el precio de venta que venga se ignora', async () => {
-    await obtenerSesion('R2') // puede crear, pero no gestiona precios
-    const creado = await crearProducto(datos)
-    expect(creado.precioVenta).toBe(0)
-    expect(creado.sku).toMatch(/^MOD-/)
-    expect(creado.existencias).toBe(0)
+  test('limit mayor a 100 es un error 400', async () => {
+    await expect(listar({ limit: 500 })).rejects.toMatchObject({ estado: 400 })
   })
 
-  test('obtenerProducto trae el producto completo, sin costo si no hay permiso', async () => {
-    await obtenerSesion('R6')
-    const producto = await obtenerProducto(1)
-    expect(producto).toHaveProperty('descripcion')
-    expect(producto).not.toHaveProperty('precioCompra')
-    await expect(obtenerProducto(9999)).rejects.toThrow('no existe')
+  test('crear exige SKU y responde 409 si se repite', async () => {
+    await expect(crear({ name: 'Sin SKU' })).rejects.toMatchObject({ estado: 400 })
+    const { sku } = await generarSku('PRB')
+    expect(sku).toMatch(/^PRB-\d{4}$/)
+    const creado = await crear({ sku, name: 'Producto de prueba', sale_price: 10 })
+    expect(creado.data).toMatchObject({ sku, name: 'Producto de prueba', status: 'active', barcode: null })
+    await expect(crear({ sku, name: 'Otro' })).rejects.toMatchObject({ estado: 409 })
   })
 
-  test('actualizar cambia los datos y recalcula el estado de stock', async () => {
-    await obtenerSesion('R0')
-    const actualizado = await actualizarProducto(2, { nombre: 'Jeans editados', stockMinimo: 100 })
-    expect(actualizado.nombre).toBe('Jeans editados')
-    expect(actualizado.estadoStock).toBe('bajo')
-  })
-})
+  test('archivar no devuelve el producto; restaurar es un PUT con status active', async () => {
+    const respuesta = await archivar(2)
+    expect(respuesta).toEqual({ ok: true, message: expect.any(String), id: 2, status: 'archived' })
+    expect((await listar({ status: 'archived', limit: 100 })).data.map((p) => p.id)).toContain(2)
 
-describe('mock de archivar', () => {
-  test('sin products.archive se rechaza', async () => {
-    await obtenerSesion('R3')
-    await expect(archivarProducto(3)).rejects.toThrow('products.archive')
+    const restaurado = await actualizar(2, { status: 'active' })
+    expect(restaurado.data.status).toBe('active')
   })
 
-  test('archivar saca el producto de la lista normal y restaurar lo regresa', async () => {
-    await obtenerSesion('R0')
-    await archivarProducto(3)
+  test('cada acción pide su permiso (403)', async () => {
+    await obtenerSesion('auditor')
+    await expect(crear({ sku: 'XX-1', name: 'Nada' })).rejects.toMatchObject({ estado: 403 })
+    await expect(actualizar(1, { name: 'Nada' })).rejects.toMatchObject({ estado: 403 })
+    await expect(archivar(1)).rejects.toMatchObject({ estado: 403 })
+  })
 
-    const activos = await listarProductos({ porPagina: 100 })
-    expect(activos.elementos.some((p) => p.id === 3)).toBe(false)
-    const archivados = await listarProductos({ archivados: true })
-    expect(archivados.elementos.map((p) => p.id)).toContain(3)
-
-    await restaurarProducto(3)
-    const deNuevo = await listarProductos({ porPagina: 100 })
-    expect(deNuevo.elementos.some((p) => p.id === 3)).toBe(true)
+  test('las categorías vienen como objetos', async () => {
+    const { data } = await listarCategorias()
+    expect(data[0]).toMatchObject({ id: expect.any(Number), name: expect.any(String), slug: expect.any(String) })
   })
 })

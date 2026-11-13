@@ -1,5 +1,6 @@
 .escaner-encabezado {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
@@ -17,6 +18,19 @@
 .escaner-encabezado p {
   margin: 0.25rem 0 0;
   color: var(--color-texto-suave);
+}
+
+.escaner-bodega {
+  margin-left: auto;
+  min-width: 14rem;
+}
+
+/* En pantallas angostas el selector de bodega baja a su propia línea */
+@media (max-width: 720px) {
+  .escaner-bodega {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
 }
 
 .escaner-encabezado-icono {
@@ -297,22 +311,6 @@
   background: var(--color-primario-suave);
 }
 
-.confirmacion-ubicacion {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0.75rem 1rem 1rem;
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-control);
-}
-
-.confirmacion-ubicacion legend {
-  padding: 0 0.25rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
 /* El botón de confirmar ocupa todo el ancho, como en el mockup */
 .confirmacion > .boton {
   min-height: 3rem;
@@ -328,10 +326,6 @@
 @media (max-width: 720px) {
   .confirmacion-pasos {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .confirmacion-ubicacion {
-    grid-template-columns: 1fr;
   }
 
   .confirmacion-paso {

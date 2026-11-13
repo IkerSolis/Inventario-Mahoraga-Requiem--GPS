@@ -7,7 +7,7 @@ import Boton from '../../components/Boton.jsx'
 import PrecioVenta from './PrecioVenta.jsx'
 import ProductoImagen from './ProductoImagen.jsx'
 import ProductoModal from './ProductoModal.jsx'
-import { ESTADOS_STOCK, formatoDinero } from './productoFormato.js'
+import { ESTADOS_STOCK, SIN_DATO, formatoDinero, nombreCategoria } from './productoFormato.js'
 import './productos.css'
 import './ProductoDetallePage.css'
 
@@ -53,15 +53,14 @@ export default function ProductoDetallePage() {
     }
   }, [clave, id])
 
-  // Las categorías solo hacen falta para el formulario de edición.
-  // Se depende del booleano y no de puede(), porque puede es una función nueva en cada render.
+  // Las categorías dan el nombre de la del producto (el producto solo trae su id) y llenan el formulario.
+  // Si fallan, se muestra "—" en lugar del nombre.
   const puedeEditar = puede('products.update')
   useEffect(() => {
-    if (puedeEditar)
-      listarCategorias()
-        .then(setCategorias)
-        .catch(() => setCategorias([]))
-  }, [puedeEditar])
+    listarCategorias()
+      .then(setCategorias)
+      .catch(() => setCategorias([]))
+  }, [])
 
   function alGuardar(mensaje, tipo = 'exito') {
     setEditando(false)
@@ -111,10 +110,12 @@ export default function ProductoDetallePage() {
             <h1>{producto.nombre}</h1>
             <div className="detalle-etiquetas">
               <span className="producto-sku">{producto.sku}</span>
-              <Badge tono="info">{producto.categoria}</Badge>
-              <Badge tono={estado.tono} punto>
-                {estado.texto}
-              </Badge>
+              <Badge tono="info">{nombreCategoria(categorias, producto.categoriaId)}</Badge>
+              {estado && (
+                <Badge tono={estado.tono} punto>
+                  {estado.texto}
+                </Badge>
+              )}
               {producto.archivado && <Badge tono="neutro">Archivado</Badge>}
             </div>
           </div>
@@ -142,16 +143,20 @@ export default function ProductoDetallePage() {
       <div className="detalle-tarjetas">
         <article className="detalle-tarjeta">
           <h2>Inventario</h2>
+          {/* Las existencias, el mínimo y la ubicación son por bodega; /products no los trae */}
           <dl>
             <dt>Existencias</dt>
-            <dd className="cifra">{producto.existencias}</dd>
-            <dt>Stock mínimo</dt>
-            <dd className="cifra">{producto.stockMinimo}</dd>
-            <dt>Ubicación</dt>
-            <dd>
-              Pasillo {producto.pasillo} · Rack {producto.rack} · Gaveta {producto.gaveta}
-            </dd>
+            <dd className="cifra">{producto.existencias ?? SIN_DATO}</dd>
           </dl>
+          {puede('stock.read') && (
+            <p className="detalle-nota">
+              <Link to={`/inventario/kardex/${producto.id}`}>Ver kardex del producto</Link>
+            </p>
+          )}
+          <p className="detalle-nota">
+            Existencias, mínimos y ubicación por bodega en{' '}
+            <Link to="/inventario/existencias">Inventario › Existencias</Link>.
+          </p>
         </article>
 
         <article className="detalle-tarjeta">
@@ -176,16 +181,16 @@ export default function ProductoDetallePage() {
           <dl>
             <dt>Código de barras</dt>
             <dd className="detalle-codigo">
-              <span className="cifra">{producto.codigoBarras}</span>
-              <Boton
-                variante="secundario"
-                icono={copiado ? 'check' : 'content_copy'}
-                aria-label={copiado ? 'Código copiado' : 'Copiar código de barras'}
-                onClick={copiarCodigo}
-              />
+              <span className="cifra">{producto.codigoBarras ?? SIN_DATO}</span>
+              {producto.codigoBarras && (
+                <Boton
+                  variante="secundario"
+                  icono={copiado ? 'check' : 'content_copy'}
+                  aria-label={copiado ? 'Código copiado' : 'Copiar código de barras'}
+                  onClick={copiarCodigo}
+                />
+              )}
             </dd>
-            <dt>Marca</dt>
-            <dd>{producto.marca || '—'}</dd>
             <dt>Unidad</dt>
             <dd>{producto.unidad}</dd>
             <dt>Descripción</dt>

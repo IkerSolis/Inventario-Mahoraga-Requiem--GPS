@@ -1,5 +1,11 @@
 import { useEffect, useId, useMemo, useState } from 'react'
-import { actualizarProducto, crearProducto, obtenerProducto, subirImagenProducto } from '../../api/productos.js'
+import {
+  actualizarProducto,
+  crearProducto,
+  generarCodigoBarras,
+  generarSku,
+  obtenerProducto,
+} from '../../api/productos.js'
 import { usePuede } from '../../auth/usePuede.js'
 import Boton from '../../components/Boton.jsx'
 import Input from '../../components/Input.jsx'
@@ -14,21 +20,19 @@ import './ProductoModal.css'
 // Los <input> trabajan con texto, así que los números se pasan a texto para el formulario
 function valoresIniciales(producto) {
   return {
+    sku: producto?.sku ?? '',
+    codigoBarras: producto?.codigoBarras ?? '',
     nombre: producto?.nombre ?? '',
     descripcion: producto?.descripcion ?? '',
-    categoria: producto?.categoria ?? '',
-    marca: producto?.marca ?? '',
+    categoriaId: producto?.categoriaId?.toString() ?? '',
     unidad: producto?.unidad ?? 'pieza',
     precioCompra: producto?.precioCompra?.toString() ?? '',
     precioVenta: producto?.precioVenta?.toString() ?? '',
-    stockMinimo: producto?.stockMinimo?.toString() ?? '',
-    pasillo: producto?.pasillo ?? '',
-    rack: producto?.rack ?? '',
-    gaveta: producto?.gaveta ?? '',
   }
 }
 
 // idProducto: null para crear uno nuevo, o el id del producto a editar.
+// categorias: [{ id, nombre }] que ya cargó la página.
 // Al editar se pide el producto completo al servidor, así el formulario abre con los datos más recientes.
 // La página lo monta al abrir y lo desmonta al cerrar, así el formulario siempre empieza limpio.
 export default function ProductoModal({ idProducto, categorias, onCerrar, onGuardado }) {
@@ -46,6 +50,7 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
   const [errorServidor, setErrorServidor] = useState(null)
   const [guardando, setGuardando] = useState(false)
   const [archivo, setArchivo] = useState(null) // imagen nueva elegida (File), todavía sin subir
+  const [generandoCodigo, setGenerandoCodigo] = useState(false)
 
   // Vista previa: el navegador crea una URL temporal para el archivo; se libera al cambiarlo o al cerrar
   const vistaPrevia = useMemo(() => (archivo ? URL.createObjectURL(archivo) : null), [archivo])
@@ -54,6 +59,21 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
       if (vistaPrevia) URL.revokeObjectURL(vistaPrevia)
     }
   }, [vistaPrevia])
+
+  // Al crear, el SKU lo propone el servidor (GET /products/generate/sku); se puede cambiar antes de guardar.
+  // Si falla, el campo queda vacío para escribirlo a mano.
+  useEffect(() => {
+    if (!esNuevo) return
+    let vigente = true
+    generarSku()
+      .then((sku) => {
+        if (vigente) setValores((actuales) => (actuales.sku ? actuales : { ...actuales, sku }))
+      })
+      .catch(() => {})
+    return () => {
+      vigente = false
+    }
+  }, [esNuevo])
 
   useEffect(() => {
     if (esNuevo) return
@@ -75,15 +95,32 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
     }
   }, [esNuevo, idProducto])
 
-  // Si la categoría del producto no viene en la lista (por ejemplo, si falló la carga), la agregamos
+  // Si la categoría del producto no viene en la lista (inactiva, o falló la carga), se agrega con su número
+  const idCategoria = Number(valores.categoriaId)
   const opcionesCategoria =
-    !valores.categoria || categorias.includes(valores.categoria) ? categorias : [valores.categoria, ...categorias]
+    !idCategoria || categorias.some((c) => c.id === idCategoria)
+      ? categorias
+      : [{ id: idCategoria, nombre: `Categoría ${idCategoria}` }, ...categorias]
 
   function cambiar(e) {
     const { name, value } = e.target
     setValores({ ...valores, [name]: value })
     // Al corregir un campo, su error desaparece
     if (errores[name]) setErrores({ ...errores, [name]: undefined })
+  }
+
+  // El servidor genera un EAN-13 válido (750 + 9 dígitos + verificador)
+  async function generarCodigo() {
+    setGenerandoCodigo(true)
+    try {
+      const codigo = await generarCodigoBarras()
+      setValores((actuales) => ({ ...actuales, codigoBarras: codigo }))
+      setErrores((actuales) => ({ ...actuales, codigoBarras: undefined }))
+    } catch (error) {
+      setErrores((actuales) => ({ ...actuales, codigoBarras: `No se pudo generar: ${error.message}` }))
+    } finally {
+      setGenerandoCodigo(false)
+    }
   }
 
   // La imagen se valida en cuanto se elige, sin esperar a guardar
@@ -114,22 +151,10 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
     setGuardando(true)
     setErrorServidor(null)
     try {
-      const guardado = esNuevo
-        ? await crearProducto(resultado.data)
-        : await actualizarProducto(producto.id, resultado.data)
-      const mensaje = esNuevo ? 'Producto creado.' : 'Cambios guardados.'
-
-      // La imagen va en otra petición (multipart). Si falla, el producto ya quedó guardado:
-      // se cierra el modal con un aviso en lugar de dejarlo abierto, para no crear el producto dos veces.
-      if (archivo) {
-        try {
-          await subirImagenProducto(guardado.id, archivo)
-        } catch (error) {
-          onGuardado(`${mensaje} Pero la imagen no se pudo subir: ${error.message}`, 'alerta')
-          return
-        }
-      }
-      onGuardado(mensaje)
+      // La imagen viaja en la misma petición (multipart, campo "image"); si no hay, va como JSON
+      if (esNuevo) await crearProducto(resultado.data, archivo)
+      else await actualizarProducto(producto.id, resultado.data, archivo)
+      onGuardado(esNuevo ? 'Producto creado.' : 'Cambios guardados.')
     } catch (error) {
       setErrorServidor(error.message)
     } finally {
@@ -185,6 +210,15 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
           <div className="producto-form-completo">
             <Input etiqueta="Nombre" maxLength={120} autoFocus {...campo('nombre')} />
           </div>
+          <Input etiqueta={esNuevo ? 'SKU (propuesto por el sistema)' : 'SKU'} maxLength={64} {...campo('sku')} />
+          <div className="producto-form-codigo">
+            <Input etiqueta="Código de barras (opcional)" maxLength={100} {...campo('codigoBarras')} />
+            {puede('products.create') && (
+              <Boton variante="secundario" icono="barcode" cargando={generandoCodigo} onClick={generarCodigo}>
+                Generar
+              </Boton>
+            )}
+          </div>
           <div className="producto-form-completo">
             <Textarea etiqueta="Descripción (opcional)" maxLength={500} {...campo('descripcion')} />
           </div>
@@ -193,7 +227,7 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
           <div className="producto-form-completo producto-form-imagen">
             <ProductoImagen src={vistaPrevia ?? producto?.imagen} alt="Vista previa de la imagen" tamano="grande" />
             <Input
-              etiqueta="Imagen (opcional, PNG o JPG de hasta 2 MB)"
+              etiqueta="Imagen (opcional, PNG o JPG de hasta 5 MB)"
               type="file"
               accept="image/png,image/jpeg"
               onChange={elegirImagen}
@@ -201,15 +235,14 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
             />
           </div>
 
-          <Select etiqueta="Categoría" {...campo('categoria')}>
+          <Select etiqueta="Categoría" {...campo('categoriaId')}>
             <option value="">Elige una categoría</option>
-            {opcionesCategoria.map((nombre) => (
-              <option key={nombre} value={nombre}>
-                {nombre}
+            {opcionesCategoria.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
               </option>
             ))}
           </Select>
-          <Input etiqueta="Marca (opcional)" maxLength={60} {...campo('marca')} />
 
           <Select etiqueta="Unidad" {...campo('unidad')}>
             {UNIDADES.map((unidad) => (
@@ -218,7 +251,6 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
               </option>
             ))}
           </Select>
-          <Input etiqueta="Stock mínimo" type="number" min={0} step={1} inputMode="numeric" {...campo('stockMinimo')} />
 
           {puedeVerCosto && (
             <Input etiqueta="Costo" type="number" min={0} step="0.01" inputMode="decimal" {...campo('precioCompra')} />
@@ -233,12 +265,10 @@ export default function ProductoModal({ idProducto, categorias, onCerrar, onGuar
             {...campo('precioVenta')}
           />
 
-          <fieldset className="producto-ubicacion producto-form-completo">
-            <legend>Ubicación en almacén</legend>
-            <Input etiqueta="Pasillo" maxLength={10} {...campo('pasillo')} />
-            <Input etiqueta="Rack" maxLength={10} {...campo('rack')} />
-            <Input etiqueta="Gaveta" maxLength={10} {...campo('gaveta')} />
-          </fieldset>
+          <p className="producto-form-completo producto-form-nota">
+            El stock mínimo, el máximo y la ubicación (pasillo, rack, gaveta) se configuran por bodega en Inventario ›
+            Existencias.
+          </p>
         </form>
       )}
     </Modal>

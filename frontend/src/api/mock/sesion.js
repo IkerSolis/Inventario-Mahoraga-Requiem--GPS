@@ -1,4 +1,6 @@
-// Simula GET /api/me. La tabla sale de la matriz de permisos del plan de desarrollo.
+// Simula GET /api/auth/me de Backend 1. Responde igual que el servidor:
+// { user: { id, business_id, name, email, status, is_owner, avatar_url, roles, permissions, scopes }, business }
+// La tabla rol → permisos sale de la matriz del plan de desarrollo.
 // Los permisos marcados como opcionales (*) en la matriz quedan APAGADOS aquí, salvo los indicados:
 //   R2 costs.read · R3 stock.adjust.approve, audit.read · R4 stock.transfer
 //   R5 stock.receive, costs.read · R6 stock.issue, stock.transfer, prices.manage · R7 audit.read
@@ -6,15 +8,17 @@
 // Para probar uno, agrégalo al arreglo del rol; para apagarlo, quítalo.
 import { esperar } from './esperar.js'
 
+// codigo: como se nombran en el plan (R0–R7). clave: el código del rol en Backend 1 (user.roles).
+// id: un usuario distinto por rol, para que el mock de ajustes sepa quién solicitó y quién aprueba.
 export const ROLES = [
-  { codigo: 'R0', nombre: 'Propietario' },
-  { codigo: 'R1', nombre: 'Administrador del sistema' },
-  { codigo: 'R2', nombre: 'Gerente de inventario' },
-  { codigo: 'R3', nombre: 'Supervisor de almacén' },
-  { codigo: 'R4', nombre: 'Almacenista' },
-  { codigo: 'R5', nombre: 'Compras' },
-  { codigo: 'R6', nombre: 'Ventas / mostrador' },
-  { codigo: 'R7', nombre: 'Auditor' },
+  { codigo: 'R0', clave: 'owner', nombre: 'Propietario', id: 1 },
+  { codigo: 'R1', clave: 'system_admin', nombre: 'Administrador del sistema', id: 2 },
+  { codigo: 'R2', clave: 'inventory_manager', nombre: 'Gerente de inventario', id: 3 },
+  { codigo: 'R3', clave: 'warehouse_supervisor', nombre: 'Supervisor de almacén', id: 4 },
+  { codigo: 'R4', clave: 'warehouse_operator', nombre: 'Almacenista', id: 5 },
+  { codigo: 'R5', clave: 'purchasing', nombre: 'Compras', id: 6 },
+  { codigo: 'R6', clave: 'sales', nombre: 'Ventas / mostrador', id: 7 },
+  { codigo: 'R7', clave: 'auditor', nombre: 'Auditor', id: 8 },
 ]
 
 // Los 30 permisos atómicos del sistema
@@ -103,18 +107,33 @@ export const PERMISOS_POR_ROL = {
   R7: ['users.read', 'roles.read', 'products.read', 'stock.read', 'purchases.read', 'sales.read', 'reports.read'],
 }
 
-// Hace las veces de la cookie de sesión: los otros mocks preguntan aquí qué puede el usuario actual
-let rolActual = 'R0'
+// Hace las veces de la cookie de sesión: los otros mocks preguntan aquí quién es el usuario actual
+let rolActual = ROLES[0]
 
 export function tienePermiso(permiso) {
-  return PERMISOS_POR_ROL[rolActual].includes(permiso)
+  return PERMISOS_POR_ROL[rolActual.codigo].includes(permiso)
 }
 
-export function obtenerSesion(rol = rolActual) {
-  rolActual = rol
+export function usuarioActual() {
+  return rolActual.id
+}
+
+// claveRol: 'owner', 'auditor'... (solo el mock lo usa, para el selector de rol de prueba)
+export function obtenerSesion(claveRol = rolActual.clave) {
+  rolActual = ROLES.find((r) => r.clave === claveRol) ?? ROLES[0]
   return esperar({
-    usuario: { nombre: 'Usuario de prueba' },
-    rol,
-    permisos: PERMISOS_POR_ROL[rol],
+    user: {
+      id: rolActual.id,
+      business_id: 1,
+      name: `Usuario de prueba (${rolActual.nombre})`,
+      email: `${rolActual.clave}@mahoraga.test`,
+      status: 'active',
+      is_owner: rolActual.clave === 'owner',
+      avatar_url: null,
+      roles: [rolActual.clave],
+      permissions: PERMISOS_POR_ROL[rolActual.codigo],
+      scopes: [],
+    },
+    business: { id: 1, name: 'Mahoraga Demo', legal_name: 'Mahoraga Demo S.A. de C.V.', logo_url: null },
   })
 }

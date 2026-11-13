@@ -3,42 +3,42 @@ import { erroresPorCampo, esquemaSegunPermisos, productoSchema, validarImagen } 
 
 // Así llegan los datos desde el formulario: todo como texto
 const formularioValido = {
+  sku: ' MOD-0049 ',
+  codigoBarras: '',
   nombre: '  Camiseta  ',
   descripcion: '',
-  categoria: 'Playeras',
-  marca: '',
+  categoriaId: '1',
   unidad: 'pieza',
   precioCompra: '100',
   precioVenta: '189.50',
-  stockMinimo: '10',
-  pasillo: '1',
-  rack: 'A',
-  gaveta: '3',
 }
 
 describe('productoSchema', () => {
   test('acepta datos válidos, recorta espacios y convierte números', () => {
     const resultado = productoSchema.safeParse(formularioValido)
     expect(resultado.success).toBe(true)
+    expect(resultado.data.sku).toBe('MOD-0049')
     expect(resultado.data.nombre).toBe('Camiseta')
+    expect(resultado.data.categoriaId).toBe(1)
     expect(resultado.data.precioVenta).toBe(189.5)
-    expect(resultado.data.stockMinimo).toBe(10)
   })
 
   test('da un mensaje por campo', () => {
     const resultado = productoSchema.safeParse({
       ...formularioValido,
+      sku: 'M',
       nombre: '   ',
+      categoriaId: '',
       precioVenta: '',
       precioCompra: '-5',
-      stockMinimo: '2.5',
       unidad: 'tonelada',
     })
     expect(erroresPorCampo(resultado.error)).toEqual({
-      nombre: 'Este campo es obligatorio',
+      sku: 'Mínimo 2 caracteres',
+      nombre: 'Mínimo 2 caracteres',
+      categoriaId: 'Elige una categoría',
       precioVenta: 'Escribe un número',
       precioCompra: 'No puede ser negativo',
-      stockMinimo: 'Debe ser un número entero',
       unidad: 'Elige una unidad',
     })
   })
@@ -46,6 +46,14 @@ describe('productoSchema', () => {
   test('el precio de venta debe ser mayor a 0', () => {
     const resultado = productoSchema.safeParse({ ...formularioValido, precioVenta: '0' })
     expect(erroresPorCampo(resultado.error)).toEqual({ precioVenta: 'Debe ser mayor a 0' })
+  })
+
+  test('ya no pide stock mínimo, ubicación ni marca (son por bodega o no existen en el backend)', () => {
+    const resultado = productoSchema.safeParse({ ...formularioValido, pasillo: '1', marca: 'Norte', stockMinimo: '5' })
+    expect(resultado.success).toBe(true)
+    expect(resultado.data).not.toHaveProperty('pasillo')
+    expect(resultado.data).not.toHaveProperty('marca')
+    expect(resultado.data).not.toHaveProperty('stockMinimo')
   })
 })
 
@@ -62,9 +70,9 @@ describe('esquemaSegunPermisos', () => {
 describe('validarImagen', () => {
   const MB = 1024 * 1024
 
-  test('acepta PNG y JPG de hasta 2 MB', () => {
+  test('acepta PNG y JPG de hasta 5 MB', () => {
     expect(validarImagen({ type: 'image/png', size: 500 * 1024 })).toBeNull()
-    expect(validarImagen({ type: 'image/jpeg', size: 2 * MB })).toBeNull()
+    expect(validarImagen({ type: 'image/jpeg', size: 5 * MB })).toBeNull()
   })
 
   test('rechaza otros formatos', () => {
@@ -72,7 +80,7 @@ describe('validarImagen', () => {
     expect(validarImagen({ type: 'application/pdf', size: 1000 })).toBe('Solo se aceptan imágenes PNG o JPG')
   })
 
-  test('rechaza imágenes de más de 2 MB', () => {
-    expect(validarImagen({ type: 'image/png', size: 2 * MB + 1 })).toBe('La imagen no puede pesar más de 2 MB')
+  test('rechaza imágenes de más de 5 MB', () => {
+    expect(validarImagen({ type: 'image/png', size: 5 * MB + 1 })).toBe('La imagen no puede pesar más de 5 MB')
   })
 })

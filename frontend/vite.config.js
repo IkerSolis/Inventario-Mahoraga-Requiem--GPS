@@ -9,4 +9,9 @@ const usarHttps = process.env.npm_lifecycle_event === 'dev:red'
 
 export default defineConfig({
   plugins: [react(), usarHttps && basicSsl()],
+  test: {
+    // Las pruebas de pantallas (React Testing Library) piden jsdom con un comentario al inicio del archivo;
+    // las demás corren en Node, que es más rápido.
+    setupFiles: ['./src/pruebas/preparar.js'],
+  },
 })

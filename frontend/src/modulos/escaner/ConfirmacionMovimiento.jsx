@@ -5,9 +5,9 @@ import Input from '../../components/Input.jsx'
 import { PASOS_RAPIDOS, textoCantidad, textoDiferencia, totalNuevo, validarCantidad } from './escanerLogica.js'
 
 const TEXTOS = {
-  entrada: { cantidad: 'Cantidad a ingresar', ubicacion: 'Ubicación destino', boton: 'Confirmar entrada' },
-  salida: { cantidad: 'Cantidad a sacar', ubicacion: 'Ubicación de origen', boton: 'Confirmar salida' },
-  conteo: { cantidad: 'Cantidad contada', ubicacion: 'Ubicación contada', boton: 'Registrar conteo' },
+  entrada: { cantidad: 'Cantidad a ingresar', boton: 'Confirmar entrada' },
+  salida: { cantidad: 'Cantidad a sacar', boton: 'Confirmar salida' },
+  conteo: { cantidad: 'Cantidad contada', boton: 'Registrar conteo' },
 }
 
 // Formulario para confirmar la lectura actual.
@@ -27,8 +27,10 @@ export default function ConfirmacionMovimiento({
   const idError = useId()
   const textos = TEXTOS[tipo]
   const { producto } = lectura
-  const problema = validarCantidad(tipo, lectura.cantidad, producto.existencias)
+  const problema = validarCantidad(tipo, lectura.cantidad, producto.disponible)
   const cantidad = Number(lectura.cantidad)
+  // Sin dato de existencias (no se pudo consultar) no se muestra el total ni la diferencia
+  const hayExistencias = producto.existencias != null
   const diferencia = cantidad - producto.existencias
 
   return (
@@ -36,10 +38,10 @@ export default function ConfirmacionMovimiento({
       <div className="confirmacion-cantidad">
         <div className="confirmacion-encabezado">
           <span>{textos.cantidad}</span>
-          {!problema && tipo !== 'conteo' && (
+          {!problema && hayExistencias && tipo !== 'conteo' && (
             <span className="cifra">Total nuevo: {totalNuevo(tipo, producto.existencias, cantidad)}</span>
           )}
-          {!problema && tipo === 'conteo' && (
+          {!problema && hayExistencias && tipo === 'conteo' && (
             <Badge tono={diferencia === 0 ? 'optimo' : 'alerta'} punto>
               {diferencia === 0 ? 'Sin diferencia' : `Diferencia ${textoDiferencia(diferencia)}`}
             </Badge>
@@ -77,13 +79,6 @@ export default function ConfirmacionMovimiento({
           </p>
         )}
       </div>
-
-      <fieldset className="confirmacion-ubicacion">
-        <legend>{textos.ubicacion}</legend>
-        <Input etiqueta="Pasillo" value={lectura.pasillo} onChange={(e) => onCambiar({ pasillo: e.target.value })} />
-        <Input etiqueta="Rack" value={lectura.rack} onChange={(e) => onCambiar({ rack: e.target.value })} />
-        <Input etiqueta="Gaveta" value={lectura.gaveta} onChange={(e) => onCambiar({ gaveta: e.target.value })} />
-      </fieldset>
 
       {/* El documento se conserva entre lecturas del mismo modo: normalmente se reciben varios productos de la misma orden */}
       <Input

@@ -1,26 +1,35 @@
 import Badge from '../../components/Badge.jsx'
 import Boton from '../../components/Boton.jsx'
 import ProductoImagen from '../productos/ProductoImagen.jsx'
+import { SIN_DATO } from '../productos/productoFormato.js'
 
-// Tarjeta del producto recién leído. La cantidad y la ubicación se editan en ConfirmacionMovimiento.
-export default function LecturaActual({ lectura, onDescartar }) {
+// Tarjeta del producto recién leído. La cantidad se edita en ConfirmacionMovimiento.
+// Existencias y ubicación son las de la bodega elegida; "—" si no se pudieron consultar o no tiene.
+export default function LecturaActual({ lectura, bodega, onDescartar }) {
   const { producto } = lectura
+  const { pasillo, rack, gaveta } = producto
+  const hayUbicacion = pasillo || rack || gaveta
 
   return (
     <article className="lectura" aria-label="Producto leído">
       <ProductoImagen src={producto.imagen} tamano="grande" />
       <div className="lectura-datos">
         <div className="producto-sku">
-          {producto.sku} · {producto.codigoBarras}
+          {producto.sku}
+          {producto.codigoBarras && ` · ${producto.codigoBarras}`}
         </div>
         <h2>{producto.nombre}</h2>
-        <Badge tono="info">{producto.categoria}</Badge>
+        <Badge tono="info">{bodega.nombre}</Badge>
         <dl className="lectura-detalle">
           <dt>Stock en sistema</dt>
-          <dd className="cifra">{producto.existencias}</dd>
-          <dt>Ubicación actual</dt>
+          <dd className="cifra">{producto.existencias ?? SIN_DATO}</dd>
+          <dt>Disponible</dt>
+          <dd className="cifra">{producto.disponible ?? SIN_DATO}</dd>
+          <dt>Ubicación</dt>
           <dd>
-            Pasillo {producto.pasillo} · Rack {producto.rack} · Gaveta {producto.gaveta}
+            {hayUbicacion
+              ? `Pasillo ${pasillo ?? SIN_DATO} · Rack ${rack ?? SIN_DATO} · Gaveta ${gaveta ?? SIN_DATO}`
+              : SIN_DATO}
           </dd>
         </dl>
         <p className="lectura-ayuda">Leer otra vez el mismo código suma 1.</p>
