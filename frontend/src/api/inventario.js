@@ -176,3 +176,10 @@ export async function aprobarAjuste(id) {
     : await pedir(`/inventory/adjustments/${id}/approve`, { method: 'POST' })
   return { existenciasAntes: Number(respuesta.initial_qty), existenciasDespues: Number(respuesta.resulting_qty) }
 }
+
+// POST /api/inventory/adjustments/:id/reject (stock.adjust.approve). No mueve el stock.
+// Pendiente para Backend 2: esta ruta NO existe todavía (solo /approve); es el contrato que proponemos.
+export async function rechazarAjuste(id) {
+  if (usarMock) await mock.rechazarAjuste(id)
+  else await pedir(`/inventory/adjustments/${id}/reject`, { method: 'POST' })
+}

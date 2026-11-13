@@ -726,3 +726,18 @@ crearAjuste({
   reason: 'Pieza encontrada en otro anaquel',
   requested_by: 4,
 })
+
+// POST /api/inventory/adjustments/:id/reject
+// PROPUESTO: Backend 2 todavía no tiene esta ruta (solo approve). Mismas reglas que aprobar:
+// stock.adjust.approve y quien lo solicitó no puede rechazarlo. No mueve el stock.
+export async function rechazarAjuste(id) {
+  exigirPermiso('stock.adjust.approve')
+  const ajuste = ajustes.find((a) => a.id === Number(id))
+  if (!ajuste) throw errorHttp(404, 'Solicitud de ajuste no encontrada')
+  if (ajuste.status !== 'pending') throw errorHttp(409, 'El ajuste ya fue procesado con estatus: ' + ajuste.status)
+  if (ajuste.requested_by === usuarioActual()) {
+    throw errorHttp(403, 'La persona que solicita el ajuste no puede rechazarlo')
+  }
+  Object.assign(ajuste, { status: 'rejected', approved_by: usuarioActual(), updated_at: new Date().toISOString() })
+  return esperar({ ok: true, message: 'Ajuste rechazado', adjustment_id: ajuste.id, status: 'rejected' })
+}

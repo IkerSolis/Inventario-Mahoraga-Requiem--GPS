@@ -170,3 +170,62 @@
 .kardex-sale {
   color: color-mix(in srgb, var(--color-critico) 70%, black);
 }
+
+.ajustes {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.ajustes-panel {
+  padding: 1.25rem;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-superficie);
+}
+
+.ajustes-panel h2 {
+  margin: 0 0 1rem;
+}
+
+.ajustes-panel .inventario-encabezado h2 {
+  margin: 0;
+}
+
+.ajustes-panel .inventario-chips {
+  margin: 0;
+}
+
+.ajustes-producto {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  max-width: 32rem;
+}
+
+.ajustes-producto .campo {
+  flex: 1;
+}
+
+.ajustes-elegido {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: color-mix(in srgb, var(--color-optimo) 60%, black);
+}
+
+.ajustes-formulario {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.ajustes-completo {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 720px) {
+  .ajustes-formulario {
+    grid-template-columns: 1fr;
+  }
+}
