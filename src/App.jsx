@@ -13,6 +13,7 @@ import Almacenes from "./pages/catalogos/Almacenes";
 import Usuarios from "./pages/Seguridad/Usuarios";
 import RolesPermisos from "./pages/Seguridad/RolesPermisos";
 import EmpresaSucursales from "./pages/Seguridad/EmpresaSucursales";
+import CentroAnalitico from "./pages/reportes/CentroAnalitico";
 
 
 function CatalogoPendiente({ nombre }) {
@@ -64,8 +65,10 @@ function App() {
 
   <Route path="/roles-permisos" element={<RolesPermisos />} />
 
-  <Route path="/empresa-sucursales" element={<EmpresaSucursales />}
-/>
+  <Route path="/empresa-sucursales" element={<EmpresaSucursales />}/>
+
+  <Route path="/reportes" element={<CentroAnalitico />} />
+  
 </Routes>
           </main>
         </div>

@@ -11,7 +11,8 @@ import {
   Package,
   ShieldCheck,
   Building2,
-  Store
+  Store,
+  BarChart3
 } from "lucide-react";
 
 const menuItems = [
@@ -23,7 +24,8 @@ const menuItems = [
   { name: "Unidades", path: "/unidades", icon: Ruler },
   { name: "Usuarios", path: "/usuarios", icon: Users },
   { name: "Roles y permisos", path: "/roles-permisos", icon: ShieldCheck },
-  { name: "Empresa", path: "/empresa-sucursales", icon: Building2 }
+  { name: "Empresa", path: "/empresa-sucursales", icon: Building2 },
+  { name: "Centro Analítico", path: "/reportes", icon: BarChart3 }
 ];
 
 function Sidebar() {
