@@ -938,3 +938,265 @@ td strong {
 .brand-link:hover {
   text-decoration: underline;
 }
+
+
+/* ===== GESTIÓN DE USUARIOS ===== */
+
+.users-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.users-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: var(--card, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+}
+
+.users-summary-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #e5f4f1;
+  color: #0f8b7d;
+}
+
+.users-summary-card span,
+.user-cell span,
+.sessions-user span {
+  display: block;
+  color: #777;
+  font-size: 12px;
+}
+
+.users-summary-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 23px;
+}
+
+.users-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 190px;
+}
+
+.user-cell strong {
+  display: block;
+  font-size: 13px;
+}
+
+.user-avatar,
+.user-detail-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #e5f4f1;
+  color: #0f8b7d;
+  font-weight: 700;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: #edf0fa;
+  color: #4655a5;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.user-status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-pending {
+  background: #fff4dc;
+  color: #a66b00;
+}
+
+.session-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--primary, #0f8b7d);
+  cursor: pointer;
+}
+
+.users-modal {
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.users-modal input,
+.users-modal select {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.users-modal .form-group {
+  margin-bottom: 16px;
+}
+
+.users-modal .form-group label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.users-modal .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.invitation-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f1f6fb;
+  color: #526477;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.user-details {
+  text-align: center;
+}
+
+.user-detail-avatar {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+  font-size: 24px;
+}
+
+.user-details h3 {
+  margin: 0 0 5px;
+}
+
+.user-details > p {
+  margin: 0 0 22px;
+  color: #777;
+  font-size: 13px;
+}
+
+.user-details .detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border, #eee);
+  text-align: left;
+  font-size: 13px;
+}
+
+.sessions-user {
+  margin-bottom: 18px;
+}
+
+.sessions-user strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border, #eee);
+}
+
+.session-device {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: #f0f3f5;
+  color: #526477;
+}
+
+.session-info {
+  flex: 1;
+}
+
+.session-info strong,
+.session-info span {
+  display: block;
+  font-size: 13px;
+}
+
+.session-info span {
+  margin-top: 4px;
+  color: #777;
+}
+
+.session-close {
+  border: 0;
+  background: transparent;
+  color: #c54b4b;
+  cursor: pointer;
+  padding: 8px;
+}
+
+@media (max-width: 900px) {
+  .users-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .users-toolbar-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .users-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .users-modal .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .users-toolbar-actions {
+    width: 100%;
+  }
+}

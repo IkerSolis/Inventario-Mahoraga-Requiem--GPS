@@ -17,7 +17,7 @@ const menuItems = [
   { name: "Proveedores", path: "/proveedores", icon: Truck },
   { name: "Clientes", path: "/clientes", icon: Users },
   { name: "Unidades", path: "/unidades", icon: Ruler },
-  { name: "Almacenes", path: "/almacenes", icon: Warehouse }
+  { name: "Usuarios", path: "/usuarios", icon: Users }
 ];
 
 function Sidebar() {
