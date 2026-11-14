@@ -9,7 +9,9 @@ import {
   Ruler,
   Warehouse,
   Package,
-  ShieldCheck
+  ShieldCheck,
+  Building2,
+  Store
 } from "lucide-react";
 
 const menuItems = [
@@ -20,7 +22,8 @@ const menuItems = [
   { name: "Clientes", path: "/clientes", icon: Users },
   { name: "Unidades", path: "/unidades", icon: Ruler },
   { name: "Usuarios", path: "/usuarios", icon: Users },
-  { name: "Roles y permisos", path: "/roles-permisos", icon: ShieldCheck }
+  { name: "Roles y permisos", path: "/roles-permisos", icon: ShieldCheck },
+  { name: "Empresa", path: "/empresa-sucursales", icon: Building2 }
 ];
 
 function Sidebar() {
