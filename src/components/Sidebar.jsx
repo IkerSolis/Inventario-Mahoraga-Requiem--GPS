@@ -1,3 +1,4 @@
+
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -7,7 +8,8 @@ import {
   Users,
   Ruler,
   Warehouse,
-  Package
+  Package,
+  ShieldCheck
 } from "lucide-react";
 
 const menuItems = [
@@ -17,7 +19,8 @@ const menuItems = [
   { name: "Proveedores", path: "/proveedores", icon: Truck },
   { name: "Clientes", path: "/clientes", icon: Users },
   { name: "Unidades", path: "/unidades", icon: Ruler },
-  { name: "Usuarios", path: "/usuarios", icon: Users }
+  { name: "Usuarios", path: "/usuarios", icon: Users },
+  { name: "Roles y permisos", path: "/roles-permisos", icon: ShieldCheck }
 ];
 
 function Sidebar() {
