@@ -1,0 +1,24 @@
+:root {
+  --primary: #0F8B7D;
+  --primary-dark: #087568;
+  --primary-light: #E6F5F2;
+
+  --background: #F8FAFC;
+  --surface: #FFFFFF;
+
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+
+  --border: #E2E8F0;
+
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+
+  --sidebar-width: 245px;
+
+  --radius: 12px;
+
+  font-family: Inter, system-ui, Arial, sans-serif;
+}
