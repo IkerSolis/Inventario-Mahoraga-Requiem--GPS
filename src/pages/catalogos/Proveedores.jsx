@@ -9,10 +9,9 @@ import {
   Save,
   Truck,
   CircleCheck,
-  CircleX,
-  Mail,
-  Phone
+  CircleX
 } from "lucide-react";
+import { useTheme } from "../../context/ThemeContext";
 
 const initialSuppliers = [
   {
@@ -63,6 +62,8 @@ const emptyForm = {
 };
 
 function Proveedores() {
+  const { t } = useTheme();
+
   const [suppliers, setSuppliers] = useState(initialSuppliers);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos");
@@ -73,6 +74,9 @@ function Proveedores() {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
 
+  const translateStatus = (status) =>
+    status === "Activo" ? t("active") : t("inactive");
+
   const filteredSuppliers = suppliers.filter((supplier) => {
     const matchesSearch =
       supplier.nombre.toLowerCase().includes(search.toLowerCase()) ||
@@ -80,8 +84,7 @@ function Proveedores() {
       supplier.correo.toLowerCase().includes(search.toLowerCase());
 
     const matchesStatus =
-      statusFilter === "Todos" ||
-      supplier.estado === statusFilter;
+      statusFilter === "Todos" || supplier.estado === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -129,7 +132,7 @@ function Proveedores() {
     const nombre = form.nombre.trim();
 
     if (!nombre) {
-      setError("El nombre del proveedor es obligatorio.");
+      setError(t("supplierNameRequired"));
       return;
     }
 
@@ -140,7 +143,7 @@ function Proveedores() {
     );
 
     if (duplicate) {
-      setError("Este proveedor ya se encuentra registrado.");
+      setError(t("supplierAlreadyExists"));
       return;
     }
 
@@ -153,16 +156,11 @@ function Proveedores() {
     if (modalMode === "edit") {
       setSuppliers((previous) =>
         previous.map((supplier) =>
-          supplier.id === selectedSupplier.id
-            ? newSupplier
-            : supplier
+          supplier.id === selectedSupplier.id ? newSupplier : supplier
         )
       );
     } else {
-      setSuppliers((previous) => [
-        ...previous,
-        newSupplier
-      ]);
+      setSuppliers((previous) => [...previous, newSupplier]);
     }
 
     closeModal();
@@ -185,15 +183,13 @@ function Proveedores() {
     <div className="page-content">
       <div className="welcome-section">
         <div>
-          <h1>Proveedores</h1>
-          <p>
-            Administra la información de los proveedores de tu negocio.
-          </p>
+          <h1>{t("suppliers")}</h1>
+          <p>{t("suppliersDescription")}</p>
         </div>
 
         <button className="primary-button" onClick={openCreate}>
           <Plus size={18} />
-          Nuevo proveedor
+          {t("newSupplier")}
         </button>
       </div>
 
@@ -203,7 +199,7 @@ function Proveedores() {
         </div>
 
         <div>
-          <span>Total de proveedores</span>
+          <span>{t("totalSuppliers")}</span>
           <h2>{suppliers.length}</h2>
         </div>
       </div>
@@ -211,17 +207,16 @@ function Proveedores() {
       <div className="table-container">
         <div className="table-toolbar">
           <div>
-            <h2>Listado de proveedores</h2>
-            <p>Consulta y administra tus proveedores registrados.</p>
+            <h2>{t("supplierList")}</h2>
+            <p>{t("supplierListDescription")}</p>
           </div>
 
           <div className="category-filters">
             <div className="search-box">
               <Search size={17} />
-
               <input
                 type="text"
-                placeholder="Buscar proveedor..."
+                placeholder={t("searchSupplier")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -232,9 +227,9 @@ function Proveedores() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="Todos">Todos los estados</option>
-              <option value="Activo">Activos</option>
-              <option value="Inactivo">Inactivos</option>
+              <option value="Todos">{t("allStatuses")}</option>
+              <option value="Activo">{t("active")}</option>
+              <option value="Inactivo">{t("inactive")}</option>
             </select>
           </div>
         </div>
@@ -243,27 +238,22 @@ function Proveedores() {
           <table>
             <thead>
               <tr>
-                <th>Proveedor</th>
-                <th>Contacto</th>
-                <th>Teléfono</th>
-                <th>Correo electrónico</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th>{t("supplier")}</th>
+                <th>{t("contact")}</th>
+                <th>{t("phone")}</th>
+                <th>{t("email")}</th>
+                <th>{t("status")}</th>
+                <th>{t("actions")}</th>
               </tr>
             </thead>
 
             <tbody>
               {filteredSuppliers.map((supplier) => (
                 <tr key={supplier.id}>
-                  <td>
-                    <strong>{supplier.nombre}</strong>
-                  </td>
-
-                  <td>{supplier.contacto || "No registrado"}</td>
-
-                  <td>{supplier.telefono || "No registrado"}</td>
-
-                  <td>{supplier.correo || "No registrado"}</td>
+                  <td><strong>{supplier.nombre}</strong></td>
+                  <td>{supplier.contacto || t("notRegistered")}</td>
+                  <td>{supplier.telefono || t("notRegistered")}</td>
+                  <td>{supplier.correo || t("notRegistered")}</td>
 
                   <td>
                     <span
@@ -273,21 +263,21 @@ function Proveedores() {
                           : "status-inactive"
                       }
                     >
-                      {supplier.estado}
+                      {translateStatus(supplier.estado)}
                     </span>
                   </td>
 
                   <td>
                     <div className="table-actions">
                       <button
-                        title="Ver detalles"
+                        title={t("viewDetails")}
                         onClick={() => openView(supplier)}
                       >
                         <Eye size={17} />
                       </button>
 
                       <button
-                        title="Editar"
+                        title={t("edit")}
                         onClick={() => openEdit(supplier)}
                       >
                         <Pencil size={17} />
@@ -296,8 +286,8 @@ function Proveedores() {
                       <button
                         title={
                           supplier.estado === "Activo"
-                            ? "Desactivar"
-                            : "Activar"
+                            ? t("deactivate")
+                            : t("activate")
                         }
                         onClick={() => toggleStatus(supplier)}
                       >
@@ -315,7 +305,7 @@ function Proveedores() {
               {filteredSuppliers.length === 0 && (
                 <tr>
                   <td colSpan="6" className="empty-state">
-                    No se encontraron proveedores.
+                    {t("noSuppliersFound")}
                   </td>
                 </tr>
               )}
@@ -324,7 +314,7 @@ function Proveedores() {
         </div>
 
         <div className="table-footer">
-          Mostrando {filteredSuppliers.length} de {suppliers.length} proveedores
+          {t("showing")} {filteredSuppliers.length} {t("of")} {suppliers.length} {t("suppliers").toLowerCase()}
         </div>
       </div>
 
@@ -338,23 +328,23 @@ function Proveedores() {
               <div>
                 <h2>
                   {modalMode === "create"
-                    ? "Nuevo proveedor"
+                    ? t("newSupplier")
                     : modalMode === "edit"
-                    ? "Editar proveedor"
-                    : "Detalles del proveedor"}
+                    ? t("editSupplier")
+                    : t("supplierDetails")}
                 </h2>
 
                 <p>
                   {modalMode === "view"
-                    ? "Información del proveedor seleccionado."
-                    : "Completa los datos correspondientes."}
+                    ? t("supplierViewDescription")
+                    : t("supplierFormDescription")}
                 </p>
               </div>
 
               <button
                 className="modal-close"
                 onClick={closeModal}
-                aria-label="Cerrar"
+                aria-label={t("close")}
               >
                 <X size={20} />
               </button>
@@ -368,79 +358,77 @@ function Proveedores() {
 
                 <h3>{selectedSupplier.nombre}</h3>
 
-                <p>{selectedSupplier.direccion || "Sin dirección registrada"}</p>
+                <p>
+                  {selectedSupplier.direccion || t("noAddressRegistered")}
+                </p>
 
                 <div className="detail-row">
-                  <span>Contacto</span>
-                  <strong>{selectedSupplier.contacto || "No registrado"}</strong>
+                  <span>{t("contact")}</span>
+                  <strong>{selectedSupplier.contacto || t("notRegistered")}</strong>
                 </div>
 
                 <div className="detail-row">
-                  <span>Teléfono</span>
-                  <strong>{selectedSupplier.telefono || "No registrado"}</strong>
+                  <span>{t("phone")}</span>
+                  <strong>{selectedSupplier.telefono || t("notRegistered")}</strong>
                 </div>
 
                 <div className="detail-row">
-                  <span>Correo</span>
-                  <strong>{selectedSupplier.correo || "No registrado"}</strong>
+                  <span>{t("email")}</span>
+                  <strong>{selectedSupplier.correo || t("notRegistered")}</strong>
                 </div>
 
                 <div className="detail-row">
-                  <span>Estado</span>
-                  <strong>{selectedSupplier.estado}</strong>
+                  <span>{t("status")}</span>
+                  <strong>{translateStatus(selectedSupplier.estado)}</strong>
                 </div>
 
                 <button
                   className="primary-button full-button"
                   onClick={closeModal}
                 >
-                  Cerrar
+                  {t("close")}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                  <label>Nombre del proveedor *</label>
-
+                  <label>{t("supplierName")} *</label>
                   <input
                     name="nombre"
                     value={form.nombre}
                     onChange={handleChange}
-                    placeholder="Ej. Distribuidora del Norte"
+                    placeholder={t("supplierNamePlaceholder")}
                     maxLength={100}
                     autoFocus
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Persona de contacto</label>
-
+                  <label>{t("contactPerson")}</label>
                   <input
                     name="contacto"
                     value={form.contacto}
                     onChange={handleChange}
-                    placeholder="Nombre del contacto"
+                    placeholder={t("contactPlaceholder")}
                     maxLength={100}
                   />
                 </div>
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Teléfono</label>
-
+                    <label>{t("phone")}</label>
                     <input
                       type="tel"
                       name="telefono"
                       value={form.telefono}
                       onChange={handleChange}
-                      placeholder="Número telefónico"
+                      placeholder={t("phonePlaceholder")}
                       maxLength={20}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label>Correo electrónico</label>
-
+                    <label>{t("email")}</label>
                     <input
                       type="email"
                       name="correo"
@@ -453,34 +441,30 @@ function Proveedores() {
                 </div>
 
                 <div className="form-group">
-                  <label>Dirección</label>
-
+                  <label>{t("address")}</label>
                   <textarea
                     name="direccion"
                     value={form.direccion}
                     onChange={handleChange}
-                    placeholder="Dirección del proveedor"
+                    placeholder={t("supplierAddressPlaceholder")}
                     rows="2"
                     maxLength={200}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Estado</label>
-
+                  <label>{t("status")}</label>
                   <select
                     name="estado"
                     value={form.estado}
                     onChange={handleChange}
                   >
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
+                    <option value="Activo">{t("active")}</option>
+                    <option value="Inactivo">{t("inactive")}</option>
                   </select>
                 </div>
 
-                {error && (
-                  <div className="form-error">{error}</div>
-                )}
+                {error && <div className="form-error">{error}</div>}
 
                 <div className="modal-footer">
                   <button
@@ -488,14 +472,14 @@ function Proveedores() {
                     className="secondary-button"
                     onClick={closeModal}
                   >
-                    Cancelar
+                    {t("cancel")}
                   </button>
 
                   <button type="submit" className="primary-button">
                     <Save size={17} />
                     {modalMode === "edit"
-                      ? "Guardar cambios"
-                      : "Guardar proveedor"}
+                      ? t("saveChanges")
+                      : t("saveSupplier")}
                   </button>
                 </div>
               </form>

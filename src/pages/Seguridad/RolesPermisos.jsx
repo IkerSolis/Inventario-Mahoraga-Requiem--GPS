@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
   ShieldCheck,
   RotateCcw,
@@ -8,69 +8,68 @@ import {
   Info,
   AlertTriangle,
 } from "lucide-react";
+import { useTheme } from "../../context/ThemeContext";
 import "./RolesPermisos.css";
 
 const roles = [
-  { id: "R0", code: "owner", name: "Propietario / Dueño" },
-  { id: "R1", code: "system_admin", name: "Administrador del sistema" },
-  { id: "R2", code: "inventory_manager", name: "Gerente de inventario" },
-  { id: "R3", code: "warehouse_supervisor", name: "Supervisor de almacén" },
-  { id: "R4", code: "warehouse_operator", name: "Almacenista / Operador" },
-  { id: "R5", code: "purchasing", name: "Compras" },
-  { id: "R6", code: "sales", name: "Ventas / Mostrador" },
-  { id: "R7", code: "auditor", name: "Auditor / Consulta" },
+  { id: "R0", nameKey: "roleOwner" },
+  { id: "R1", nameKey: "roleSystemAdmin" },
+  { id: "R2", nameKey: "roleInventoryManager" },
+  { id: "R3", nameKey: "roleWarehouseSupervisor" },
+  { id: "R4", nameKey: "roleWarehouseOperator" },
+  { id: "R5", nameKey: "rolePurchasing" },
+  { id: "R6", nameKey: "roleSales" },
+  { id: "R7", nameKey: "roleAuditor" },
 ];
 
 const permissionGroups = [
   {
-    name: "Inventario",
+    nameKey: "permissionGroupInventory",
     permissions: [
-      { id: "stock.view", label: "Consultar existencias" },
-      { id: "stock.create", label: "Registrar entradas y salidas" },
-      { id: "stock.adjust", label: "Realizar ajustes de inventario" },
-      { id: "stock.approve", label: "Aprobar ajustes" },
-      { id: "stock.receive", label: "Registrar recepción de mercancía" },
-      { id: "stock.transfer", label: "Transferir entre almacenes" },
+      { id: "stock.view", labelKey: "permissionStockView" },
+      { id: "stock.create", labelKey: "permissionStockCreate" },
+      { id: "stock.adjust", labelKey: "permissionStockAdjust" },
+      { id: "stock.approve", labelKey: "permissionStockApprove" },
+      { id: "stock.receive", labelKey: "permissionStockReceive" },
+      { id: "stock.transfer", labelKey: "permissionStockTransfer" },
     ],
   },
   {
-    name: "Catálogos y compras",
+    nameKey: "permissionGroupCatalogs",
     permissions: [
-      { id: "catalog.view", label: "Consultar catálogos" },
-      { id: "catalog.manage", label: "Administrar catálogos" },
-      { id: "suppliers.manage", label: "Administrar proveedores" },
-      { id: "purchases.manage", label: "Gestionar órdenes de compra" },
+      { id: "catalog.view", labelKey: "permissionCatalogView" },
+      { id: "catalog.manage", labelKey: "permissionCatalogManage" },
+      { id: "suppliers.manage", labelKey: "permissionSuppliersManage" },
+      { id: "purchases.manage", labelKey: "permissionPurchasesManage" },
     ],
   },
   {
-    name: "Ventas",
+    nameKey: "permissionGroupSales",
     permissions: [
-      { id: "sales.view", label: "Consultar productos y disponibilidad" },
-      { id: "sales.create", label: "Registrar pedidos y ventas" },
-      { id: "sales.costs.view", label: "Consultar costos y precios" },
+      { id: "sales.view", labelKey: "permissionSalesView" },
+      { id: "sales.create", labelKey: "permissionSalesCreate" },
+      { id: "sales.costs.view", labelKey: "permissionSalesCostsView" },
     ],
   },
   {
-    name: "Administración",
+    nameKey: "permissionGroupAdministration",
     permissions: [
-      { id: "users.manage", label: "Administrar usuarios" },
-      { id: "roles.manage", label: "Administrar roles y permisos" },
-      { id: "branches.manage", label: "Administrar sucursales" },
-      { id: "settings.manage", label: "Modificar configuración global" },
+      { id: "users.manage", labelKey: "permissionUsersManage" },
+      { id: "roles.manage", labelKey: "permissionRolesManage" },
+      { id: "branches.manage", labelKey: "permissionBranchesManage" },
+      { id: "settings.manage", labelKey: "permissionSettingsManage" },
     ],
   },
   {
-    name: "Reportes y auditoría",
+    nameKey: "permissionGroupReports",
     permissions: [
-      { id: "reports.view", label: "Consultar reportes" },
-      { id: "reports.export", label: "Exportar reportes" },
-      { id: "audit.view", label: "Consultar registros de auditoría" },
+      { id: "reports.view", labelKey: "permissionReportsView" },
+      { id: "reports.export", labelKey: "permissionReportsExport" },
+      { id: "audit.view", labelKey: "permissionAuditView" },
     ],
   },
 ];
 
-// Configuración demostrativa inicial.
-// Debe revisarse y aprobarse con el equipo antes de considerarla definitiva.
 const initialPermissions = {
   "stock.view": ["R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7"],
   "stock.create": ["R0", "R1", "R2", "R3", "R4"],
@@ -110,68 +109,38 @@ const initialLimits = {
 };
 
 const restrictions = [
-  {
-    role: "R0 · Propietario",
-    description:
-      "No puede eliminarse ni quedar sin titular. La transferencia de propiedad requiere confirmación reforzada y 2FA.",
-  },
-  {
-    role: "R1 · Administrador",
-    description:
-      "No puede transferir la propiedad ni modificar al propietario inicial o las reglas críticas.",
-  },
-  {
-    role: "R2 · Gerente de inventario",
-    description:
-      "Sus permisos pueden limitarse a determinadas sucursales y almacenes. Las aprobaciones dependen de sus límites.",
-  },
-  {
-    role: "R3 · Supervisor",
-    description:
-      "Solo administra operaciones dentro de su ámbito. No administra usuarios privilegiados ni la configuración global.",
-  },
-  {
-    role: "R4 · Almacenista",
-    description:
-      "No puede aprobar sus propios ajustes sensibles ni borrar movimientos confirmados.",
-  },
-  {
-    role: "R5 · Compras",
-    description:
-      "No modifica existencias directamente, salvo que tenga el permiso explícito stock.receive.",
-  },
-  {
-    role: "R6 · Ventas",
-    description:
-      "No administra existencias manualmente. La visualización de costos y precios es configurable.",
-  },
-  {
-    role: "R7 · Auditor",
-    description:
-      "Es de solo lectura. No puede crear, editar, aprobar ni borrar registros.",
-  },
+  { roleKey: "roleOwnerShort", descriptionKey: "restrictionOwner" },
+  { roleKey: "roleAdminShort", descriptionKey: "restrictionAdmin" },
+  { roleKey: "roleManagerShort", descriptionKey: "restrictionManager" },
+  { roleKey: "roleSupervisorShort", descriptionKey: "restrictionSupervisor" },
+  { roleKey: "roleOperatorShort", descriptionKey: "restrictionOperator" },
+  { roleKey: "rolePurchasingShort", descriptionKey: "restrictionPurchasing" },
+  { roleKey: "roleSalesShort", descriptionKey: "restrictionSales" },
+  { roleKey: "roleAuditorShort", descriptionKey: "restrictionAuditor" },
+];
+
+const readOnlyPermissions = [
+  "stock.view",
+  "catalog.view",
+  "sales.view",
+  "reports.view",
+  "audit.view",
 ];
 
 export default function RolesPermisos() {
+  const { t } = useTheme();
+
   const [permissions, setPermissions] = useState(initialPermissions);
   const [limits, setLimits] = useState(initialLimits);
   const [showRestore, setShowRestore] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
 
   const togglePermission = (permissionId, roleId) => {
-    // R7 es exclusivamente de lectura.
-    if (
-      roleId === "R7" &&
-      !["stock.view", "catalog.view", "sales.view", "reports.view", "audit.view"].includes(permissionId)
-    ) {
+    if (roleId === "R7" && !readOnlyPermissions.includes(permissionId)) {
       return;
     }
 
-    // Algunas restricciones no se pueden quitar desde esta matriz.
-    if (
-      roleId === "R4" &&
-      permissionId === "stock.approve"
-    ) {
+    if (roleId === "R4" && permissionId === "stock.approve") {
       return;
     }
 
@@ -218,11 +187,9 @@ export default function RolesPermisos() {
     <main className="roles-page">
       <header className="roles-header">
         <div>
-          <span className="roles-eyebrow">SEGURIDAD Y ESTRUCTURA</span>
-          <h1>Roles y permisos</h1>
-          <p>
-            Configura los niveles de acceso y las responsabilidades de cada rol.
-          </p>
+          <span className="roles-eyebrow">{t("rolesEyebrow")}</span>
+          <h1>{t("rolesPermissionsTitle")}</h1>
+          <p>{t("rolesPermissionsDescription")}</p>
         </div>
 
         <div className="roles-header-icon">
@@ -233,31 +200,30 @@ export default function RolesPermisos() {
       <section className="roles-info">
         <Info size={19} />
         <p>
-          <strong>Configuración inicial demostrativa.</strong> Los permisos
-          propuestos deben ser revisados y aprobados por el equipo antes de
-          utilizarse como reglas definitivas.
+          <strong>{t("demonstrationConfiguration")}</strong>{" "}
+          {t("demonstrationConfigurationDescription")}
         </p>
       </section>
 
       <section className="roles-section">
         <div className="roles-section-heading">
           <div>
-            <h2>Matriz de permisos</h2>
-            <p>Activa o desactiva permisos para cada rol.</p>
+            <h2>{t("permissionsMatrix")}</h2>
+            <p>{t("permissionsMatrixDescription")}</p>
           </div>
-          <span className="roles-count">8 roles · R0 a R7</span>
+          <span className="roles-count">{t("rolesCount")}</span>
         </div>
 
         <div className="roles-matrix-wrapper">
           <table className="roles-matrix">
             <thead>
               <tr>
-                <th className="permission-name-column">Permiso</th>
+                <th className="permission-name-column">{t("permission")}</th>
                 {roles.map((role) => (
                   <th key={role.id}>
                     <span className="role-code">{role.id}</span>
                     <span className="role-short-name">
-                      {role.name.split(" ")[0]}
+                      {t(role.nameKey).split(" ")[0]}
                     </span>
                   </th>
                 ))}
@@ -266,15 +232,15 @@ export default function RolesPermisos() {
 
             <tbody>
               {permissionGroups.map((group) => (
-                <>
-                  <tr className="permission-group-row" key={group.name}>
-                    <td colSpan={9}>{group.name}</td>
+                <Fragment key={group.nameKey}>
+                  <tr className="permission-group-row">
+                    <td colSpan={9}>{t(group.nameKey)}</td>
                   </tr>
 
                   {group.permissions.map((permission) => (
                     <tr key={permission.id}>
                       <td className="permission-name-column">
-                        <span>{permission.label}</span>
+                        <span>{t(permission.labelKey)}</span>
                         <small>{permission.id}</small>
                       </td>
 
@@ -285,13 +251,7 @@ export default function RolesPermisos() {
 
                         const readOnly =
                           role.id === "R7" &&
-                          ![
-                            "stock.view",
-                            "catalog.view",
-                            "sales.view",
-                            "reports.view",
-                            "audit.view",
-                          ].includes(permission.id);
+                          !readOnlyPermissions.includes(permission.id);
 
                         const restricted =
                           role.id === "R4" &&
@@ -307,14 +267,14 @@ export default function RolesPermisos() {
                               onChange={() =>
                                 togglePermission(permission.id, role.id)
                               }
-                              aria-label={`${permission.label} para ${role.id}`}
+                              aria-label={`${t(permission.labelKey)} - ${role.id}`}
                             />
                           </td>
                         );
                       })}
                     </tr>
                   ))}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -322,19 +282,15 @@ export default function RolesPermisos() {
 
         <p className="roles-matrix-note">
           <LockKeyhole size={15} />
-          Algunas restricciones obligatorias están bloqueadas para evitar
-          configuraciones incompatibles con las reglas del negocio.
+          {t("mandatoryRestrictionsNote")}
         </p>
       </section>
 
       <section className="roles-section">
         <div className="roles-section-heading">
           <div>
-            <h2>Límites de aprobación</h2>
-            <p>
-              Define el importe máximo que puede aprobar cada rol. Deja el
-              campo vacío si todavía no se ha definido.
-            </p>
+            <h2>{t("approvalLimits")}</h2>
+            <p>{t("approvalLimitsDescription")}</p>
           </div>
         </div>
 
@@ -342,9 +298,9 @@ export default function RolesPermisos() {
           {roles.map((role) => (
             <label className="approval-card" key={role.id}>
               <span className="approval-role-code">{role.id}</span>
-              <strong>{role.name}</strong>
+              <strong>{t(role.nameKey)}</strong>
               <span className="approval-input-label">
-                Límite de aprobación
+                {t("approvalLimit")}
               </span>
               <div className="approval-input-wrapper">
                 <span>$</span>
@@ -352,14 +308,14 @@ export default function RolesPermisos() {
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Sin definir"
+                  placeholder={t("notDefined")}
                   value={limits[role.id]}
                   onChange={(event) =>
                     updateLimit(role.id, event.target.value)
                   }
                 />
               </div>
-              <small>Importe en MXN</small>
+              <small>{t("amountInMxn")}</small>
             </label>
           ))}
         </div>
@@ -368,20 +324,20 @@ export default function RolesPermisos() {
       <section className="roles-section">
         <div className="roles-section-heading">
           <div>
-            <h2>Restricciones obligatorias</h2>
-            <p>Reglas especiales que deben respetarse para cada rol.</p>
+            <h2>{t("mandatoryRestrictions")}</h2>
+            <p>{t("mandatoryRestrictionsDescription")}</p>
           </div>
         </div>
 
         <div className="restrictions-list">
           {restrictions.map((item) => (
-            <article className="restriction-card" key={item.role}>
+            <article className="restriction-card" key={item.roleKey}>
               <div className="restriction-icon">
                 <LockKeyhole size={18} />
               </div>
               <div>
-                <strong>{item.role}</strong>
-                <p>{item.description}</p>
+                <strong>{t(item.roleKey)}</strong>
+                <p>{t(item.descriptionKey)}</p>
               </div>
             </article>
           ))}
@@ -391,7 +347,7 @@ export default function RolesPermisos() {
       <footer className="roles-actions">
         {showSaved && (
           <span className="roles-saved-message">
-            Configuración guardada localmente.
+            {t("configurationSavedLocally")}
           </span>
         )}
 
@@ -401,7 +357,7 @@ export default function RolesPermisos() {
           onClick={() => setShowRestore(true)}
         >
           <RotateCcw size={17} />
-          Restaurar valores iniciales
+          {t("restoreInitialValues")}
         </button>
 
         <button
@@ -410,7 +366,7 @@ export default function RolesPermisos() {
           onClick={handleSave}
         >
           <Save size={17} />
-          Guardar configuración
+          {t("saveConfiguration")}
         </button>
       </footer>
 
@@ -425,11 +381,8 @@ export default function RolesPermisos() {
             <div className="restore-warning-icon">
               <AlertTriangle size={25} />
             </div>
-            <h2 id="restore-title">¿Restaurar configuración?</h2>
-            <p>
-              Se recuperarán los permisos y límites de la configuración
-              demostrativa inicial. Los cambios actuales se perderán.
-            </p>
+            <h2 id="restore-title">{t("restoreConfigurationTitle")}</h2>
+            <p>{t("restoreConfigurationDescription")}</p>
 
             <div className="restore-modal-actions">
               <button
@@ -437,14 +390,14 @@ export default function RolesPermisos() {
                 className="roles-button roles-button-secondary"
                 onClick={() => setShowRestore(false)}
               >
-                Cancelar
+                {t("cancel")}
               </button>
               <button
                 type="button"
                 className="roles-button roles-button-danger"
                 onClick={restoreDefaults}
               >
-                Restaurar
+                {t("restore")}
               </button>
             </div>
           </section>

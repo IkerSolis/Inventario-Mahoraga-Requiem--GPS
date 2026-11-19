@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import {
   BarChart3,
@@ -16,6 +15,7 @@ import {
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useTheme } from "../../context/ThemeContext";
 import "./CentroAnalitico.css";
 
 // Datos demostrativos. Después se conectarán con la API.
@@ -36,10 +36,11 @@ const initialMovements = [
 ];
 
 // Permisos de demostración del usuario actual.
-// En el futuro se obtendrán del sistema de autenticación.
 const currentUserPermissions = ["reports.view", "reports.export"];
 
 export default function CentroAnalitico() {
+  const { t } = useTheme();
+
   const [movements] = useState(initialMovements);
   const [startDate, setStartDate] = useState("2026-11-01");
   const [endDate, setEndDate] = useState("2026-11-30");
@@ -48,6 +49,16 @@ export default function CentroAnalitico() {
   const [search, setSearch] = useState("");
 
   const canExport = currentUserPermissions.includes("reports.export");
+
+  const translateMovementType = (movementType) => {
+    const translations = {
+      Entrada: t("analyticsEntry"),
+      Salida: t("analyticsExit"),
+      Ajuste: t("analyticsAdjustment"),
+    };
+
+    return translations[movementType] ?? movementType;
+  };
 
   const filteredMovements = useMemo(() => {
     return movements.filter((movement) => {
@@ -85,17 +96,17 @@ export default function CentroAnalitico() {
 
   const chartData = [
     {
-      name: "Entradas",
+      name: t("analyticsEntries"),
       quantity: totalEntries,
       color: "#31976a",
     },
     {
-      name: "Salidas",
+      name: t("analyticsExits"),
       quantity: totalExits,
       color: "#d66b6b",
     },
     {
-      name: "Ajustes",
+      name: t("analyticsAdjustments"),
       quantity: totalAdjustments,
       color: "#d49a42",
     },
@@ -107,27 +118,29 @@ export default function CentroAnalitico() {
   );
 
   const exportRows = filteredMovements.map((item) => ({
-    ID: item.id,
-    Fecha: item.date,
-    Producto: item.product,
-    Categoría: item.category,
-    Sucursal: item.branch,
-    Movimiento: item.type,
-    Cantidad: item.quantity,
+    [t("analyticsId")]: item.id,
+    [t("analyticsDate")]: item.date,
+    [t("analyticsProduct")]: item.product,
+    [t("analyticsCategory")]: item.category,
+    [t("analyticsBranch")]: item.branch,
+    [t("analyticsMovement")]: translateMovementType(item.type),
+    [t("analyticsQuantity")]: item.quantity,
   }));
 
   const exportCSV = () => {
     if (!canExport) return;
 
-    const headers = Object.keys(exportRows[0] || {
-      ID: "",
-      Fecha: "",
-      Producto: "",
-      Categoría: "",
-      Sucursal: "",
-      Movimiento: "",
-      Cantidad: "",
-    });
+    const headers = Object.keys(
+      exportRows[0] || {
+        [t("analyticsId")]: "",
+        [t("analyticsDate")]: "",
+        [t("analyticsProduct")]: "",
+        [t("analyticsCategory")]: "",
+        [t("analyticsBranch")]: "",
+        [t("analyticsMovement")]: "",
+        [t("analyticsQuantity")]: "",
+      }
+    );
 
     const escapeCSV = (value) =>
       `"${String(value ?? "").replace(/"/g, '""')}"`;
@@ -160,7 +173,7 @@ export default function CentroAnalitico() {
     XLSX.utils.book_append_sheet(
       workbook,
       worksheet,
-      "Movimientos"
+      t("analyticsMovementsSheet")
     );
 
     XLSX.writeFile(workbook, "reporte-inventario.xlsx");
@@ -172,30 +185,46 @@ export default function CentroAnalitico() {
     const doc = new jsPDF();
 
     doc.setFontSize(18);
-    doc.text("Reporte de inventario", 14, 18);
+    doc.text(t("analyticsReportTitle"), 14, 18);
 
     doc.setFontSize(10);
-    doc.text(`Fecha inicial: ${startDate || "Sin límite"}`, 14, 27);
-    doc.text(`Fecha final: ${endDate || "Sin límite"}`, 14, 33);
-    doc.text(`Sucursal: ${branch}`, 14, 39);
-    doc.text(`Tipo de movimiento: ${type}`, 14, 45);
+    doc.text(
+      `${t("analyticsStartDate")}: ${startDate || t("analyticsNoLimit")}`,
+      14,
+      27
+    );
+    doc.text(
+      `${t("analyticsEndDate")}: ${endDate || t("analyticsNoLimit")}`,
+      14,
+      33
+    );
+    doc.text(
+      `${t("analyticsBranch")}: ${branch === "Todas" ? t("analyticsAllBranches") : branch}`,
+      14,
+      39
+    );
+    doc.text(
+      `${t("analyticsMovementType")}: ${type === "Todos" ? t("analyticsAllTypes") : translateMovementType(type)}`,
+      14,
+      45
+    );
 
     autoTable(doc, {
       startY: 52,
       head: [[
-        "Fecha",
-        "Producto",
-        "Categoría",
-        "Sucursal",
-        "Movimiento",
-        "Cantidad",
+        t("analyticsDate"),
+        t("analyticsProduct"),
+        t("analyticsCategory"),
+        t("analyticsBranch"),
+        t("analyticsMovement"),
+        t("analyticsQuantity"),
       ]],
       body: filteredMovements.map((item) => [
         item.date,
         item.product,
         item.category,
         item.branch,
-        item.type,
+        translateMovementType(item.type),
         item.quantity,
       ]),
       styles: {
@@ -221,11 +250,11 @@ export default function CentroAnalitico() {
     <main className="analytics-page">
       <header className="analytics-header">
         <div>
-          <span className="analytics-eyebrow">REPORTES</span>
-          <h1>Centro Analítico</h1>
-          <p>
-            Consulta y analiza los movimientos de tu inventario.
-          </p>
+          <span className="analytics-eyebrow">
+            {t("analyticsReportsEyebrow")}
+          </span>
+          <h1>{t("analyticsTitle")}</h1>
+          <p>{t("analyticsDescription")}</p>
         </div>
 
         <div className="analytics-header-icon">
@@ -237,14 +266,14 @@ export default function CentroAnalitico() {
         <div className="analytics-section-title">
           <Filter size={19} />
           <div>
-            <h2>Filtros del reporte</h2>
-            <p>Selecciona los criterios de consulta.</p>
+            <h2>{t("analyticsFiltersTitle")}</h2>
+            <p>{t("analyticsFiltersDescription")}</p>
           </div>
         </div>
 
         <div className="analytics-filter-grid">
           <label>
-            Fecha inicial
+            {t("analyticsStartDate")}
             <input
               type="date"
               value={startDate}
@@ -254,7 +283,7 @@ export default function CentroAnalitico() {
           </label>
 
           <label>
-            Fecha final
+            {t("analyticsEndDate")}
             <input
               type="date"
               value={endDate}
@@ -264,12 +293,12 @@ export default function CentroAnalitico() {
           </label>
 
           <label>
-            Sucursal
+            {t("analyticsBranch")}
             <select
               value={branch}
               onChange={(event) => setBranch(event.target.value)}
             >
-              <option value="Todas">Todas las sucursales</option>
+              <option value="Todas">{t("analyticsAllBranches")}</option>
               <option value="Matriz">Matriz</option>
               <option value="Norte">Norte</option>
               <option value="Sur">Sur</option>
@@ -277,25 +306,25 @@ export default function CentroAnalitico() {
           </label>
 
           <label>
-            Tipo de movimiento
+            {t("analyticsMovementType")}
             <select
               value={type}
               onChange={(event) => setType(event.target.value)}
             >
-              <option value="Todos">Todos</option>
-              <option value="Entrada">Entradas</option>
-              <option value="Salida">Salidas</option>
-              <option value="Ajuste">Ajustes</option>
+              <option value="Todos">{t("analyticsAllTypes")}</option>
+              <option value="Entrada">{t("analyticsEntries")}</option>
+              <option value="Salida">{t("analyticsExits")}</option>
+              <option value="Ajuste">{t("analyticsAdjustments")}</option>
             </select>
           </label>
 
           <label className="analytics-search">
-            Buscar producto o categoría
+            {t("analyticsSearchLabel")}
             <div className="analytics-search-input">
               <Search size={17} />
               <input
                 type="text"
-                placeholder="Buscar..."
+                placeholder={t("analyticsSearchPlaceholder")}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -308,7 +337,7 @@ export default function CentroAnalitico() {
             onClick={resetFilters}
           >
             <RefreshCw size={16} />
-            Limpiar filtros
+            {t("analyticsClearFilters")}
           </button>
         </div>
       </section>
@@ -319,7 +348,7 @@ export default function CentroAnalitico() {
             <Activity size={21} />
           </div>
           <div>
-            <span>Movimientos registrados</span>
+            <span>{t("analyticsRegisteredMovements")}</span>
             <strong>{totalMovements}</strong>
           </div>
         </article>
@@ -329,7 +358,7 @@ export default function CentroAnalitico() {
             <ArrowDownToLine size={21} />
           </div>
           <div>
-            <span>Unidades ingresadas</span>
+            <span>{t("analyticsUnitsEntered")}</span>
             <strong>{totalEntries}</strong>
           </div>
         </article>
@@ -339,7 +368,7 @@ export default function CentroAnalitico() {
             <ArrowUpFromLine size={21} />
           </div>
           <div>
-            <span>Unidades retiradas</span>
+            <span>{t("analyticsUnitsRemoved")}</span>
             <strong>{totalExits}</strong>
           </div>
         </article>
@@ -349,7 +378,7 @@ export default function CentroAnalitico() {
             <Package size={21} />
           </div>
           <div>
-            <span>Unidades ajustadas</span>
+            <span>{t("analyticsUnitsAdjusted")}</span>
             <strong>{totalAdjustments}</strong>
           </div>
         </article>
@@ -359,8 +388,8 @@ export default function CentroAnalitico() {
         <div className="analytics-section-title">
           <BarChart3 size={20} />
           <div>
-            <h2>Movimientos de inventario</h2>
-            <p>Distribución según los filtros seleccionados.</p>
+            <h2>{t("analyticsChartTitle")}</h2>
+            <p>{t("analyticsChartDescription")}</p>
           </div>
         </div>
 
@@ -388,8 +417,10 @@ export default function CentroAnalitico() {
           <div className="analytics-section-title">
             <FileSpreadsheet size={20} />
             <div>
-              <h2>Detalle de movimientos</h2>
-              <p>{totalMovements} registros encontrados.</p>
+              <h2>{t("analyticsDetailTitle")}</h2>
+              <p>
+                {totalMovements} {t("analyticsRecordsFound")}
+              </p>
             </div>
           </div>
 
@@ -398,7 +429,11 @@ export default function CentroAnalitico() {
               type="button"
               onClick={exportPDF}
               disabled={!canExport}
-              title={!canExport ? "Requiere reports.export" : "Exportar PDF"}
+              title={
+                !canExport
+                  ? t("analyticsExportPermissionRequired")
+                  : t("analyticsExportPDF")
+              }
             >
               <FileText size={16} />
               PDF
@@ -408,7 +443,11 @@ export default function CentroAnalitico() {
               type="button"
               onClick={exportExcel}
               disabled={!canExport}
-              title={!canExport ? "Requiere reports.export" : "Exportar Excel"}
+              title={
+                !canExport
+                  ? t("analyticsExportPermissionRequired")
+                  : t("analyticsExportExcel")
+              }
             >
               <FileSpreadsheet size={16} />
               Excel
@@ -418,7 +457,11 @@ export default function CentroAnalitico() {
               type="button"
               onClick={exportCSV}
               disabled={!canExport}
-              title={!canExport ? "Requiere reports.export" : "Exportar CSV"}
+              title={
+                !canExport
+                  ? t("analyticsExportPermissionRequired")
+                  : t("analyticsExportCSV")
+              }
             >
               <Download size={16} />
               CSV
@@ -428,7 +471,7 @@ export default function CentroAnalitico() {
 
         {!canExport && (
           <p className="analytics-permission-warning">
-            Tu usuario no tiene el permiso reports.export.
+            {t("analyticsPermissionWarning")}
           </p>
         )}
 
@@ -436,12 +479,12 @@ export default function CentroAnalitico() {
           <table className="analytics-table">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Producto</th>
-                <th>Categoría</th>
-                <th>Sucursal</th>
-                <th>Movimiento</th>
-                <th>Cantidad</th>
+                <th>{t("analyticsDate")}</th>
+                <th>{t("analyticsProduct")}</th>
+                <th>{t("analyticsCategory")}</th>
+                <th>{t("analyticsBranch")}</th>
+                <th>{t("analyticsMovement")}</th>
+                <th>{t("analyticsQuantity")}</th>
               </tr>
             </thead>
 
@@ -457,7 +500,7 @@ export default function CentroAnalitico() {
                       <span
                         className={`analytics-movement-badge ${item.type.toLowerCase()}`}
                       >
-                        {item.type}
+                        {translateMovementType(item.type)}
                       </span>
                     </td>
                     <td>{item.quantity}</td>
@@ -466,7 +509,7 @@ export default function CentroAnalitico() {
               ) : (
                 <tr>
                   <td colSpan="6" className="analytics-empty">
-                    No se encontraron movimientos con esos filtros.
+                    {t("analyticsNoMovements")}
                   </td>
                 </tr>
               )}

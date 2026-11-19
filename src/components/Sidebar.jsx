@@ -1,5 +1,6 @@
 
 import { NavLink } from "react-router-dom";
+
 import {
   LayoutDashboard,
   FolderTree,
@@ -7,28 +8,34 @@ import {
   Truck,
   Users,
   Ruler,
-  Warehouse,
   Package,
   ShieldCheck,
   Building2,
-  Store,
-  BarChart3
+  Warehouse,
+  BarChart3,
+  Settings
 } from "lucide-react";
 
+import { useTheme } from "../context/ThemeContext";
+
 const menuItems = [
-  { name: "Dashboard", path: "/", icon: LayoutDashboard },
-  { name: "Categorías", path: "/categorias", icon: FolderTree },
-  { name: "Marcas", path: "/marcas", icon: Tag },
-  { name: "Proveedores", path: "/proveedores", icon: Truck },
-  { name: "Clientes", path: "/clientes", icon: Users },
-  { name: "Unidades", path: "/unidades", icon: Ruler },
-  { name: "Usuarios", path: "/usuarios", icon: Users },
-  { name: "Roles y permisos", path: "/roles-permisos", icon: ShieldCheck },
-  { name: "Empresa", path: "/empresa-sucursales", icon: Building2 },
-  { name: "Centro Analítico", path: "/reportes", icon: BarChart3 }
+  { name: "dashboard", path: "/", icon: LayoutDashboard },
+  { name: "categories", path: "/categorias", icon: FolderTree },
+  { name: "brands", path: "/marcas", icon: Tag },
+  { name: "suppliers", path: "/proveedores", icon: Truck },
+  { name: "clients", path: "/clientes", icon: Users },
+  { name: "units", path: "/unidades", icon: Ruler },
+  { name: "users", path: "/usuarios", icon: Users },
+  { name: ("warehouses"),path: "/almacenes",icon: Warehouse},
+  { name: "roles", path: "/roles-permisos", icon: ShieldCheck },
+  { name: "company", path: "/empresa-sucursales", icon: Building2 },
+  { name: "reports", path: "/reportes", icon: BarChart3 },
+  { name: "settings", path: "/configuracion", icon: Settings }
 ];
 
 function Sidebar() {
+  const { t } = useTheme();
+
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
@@ -43,7 +50,9 @@ function Sidebar() {
       </div>
 
       <div className="sidebar-section">
-        <span className="section-label">MENÚ PRINCIPAL</span>
+        <span className="section-label">
+          {t("mainMenu")}
+        </span>
 
         <nav className="sidebar-menu">
           {menuItems.map((item) => {
@@ -59,7 +68,7 @@ function Sidebar() {
                 }
               >
                 <Icon size={18} />
-                <span>{item.name}</span>
+                <span>{t(item.name)}</span>
               </NavLink>
             );
           })}
@@ -68,6 +77,7 @@ function Sidebar() {
 
       <div className="sidebar-user">
         <div className="user-avatar">CR</div>
+
         <div>
           <strong>Carlos Ruiz</strong>
           <span>Administrador</span>

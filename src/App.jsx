@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "./context/ThemeContext";
 
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
@@ -6,7 +7,7 @@ import Topbar from "./components/Topbar";
 import Dashboard from "./pages/Dashboard";
 import Marcas from "./pages/catalogos/Marcas";
 import Proveedores from "./pages/catalogos/Proveedores";
-import Categorias from "./pages/catalogos/Categorias";
+import Categorias from "./pages/catalogos/categorias";
 import Clientes from "./pages/catalogos/Clientes";
 import Unidades from "./pages/catalogos/Unidades";
 import Almacenes from "./pages/catalogos/Almacenes";
@@ -14,6 +15,7 @@ import Usuarios from "./pages/Seguridad/Usuarios";
 import RolesPermisos from "./pages/Seguridad/RolesPermisos";
 import EmpresaSucursales from "./pages/Seguridad/EmpresaSucursales";
 import CentroAnalitico from "./pages/reportes/CentroAnalitico";
+import Configuracion from "./pages/configuracion/Configuracion";
 
 
 function CatalogoPendiente({ nombre }) {
@@ -38,6 +40,7 @@ function CatalogoPendiente({ nombre }) {
 
 function App() {
   return (
+  <ThemeProvider>
     <BrowserRouter>
       <div className="app-layout">
         <Sidebar />
@@ -68,13 +71,16 @@ function App() {
   <Route path="/empresa-sucursales" element={<EmpresaSucursales />}/>
 
   <Route path="/reportes" element={<CentroAnalitico />} />
+
+  <Route path="/configuracion" element={<Configuracion />} />
   
 </Routes>
           </main>
         </div>
-      </div>
+           </div>
     </BrowserRouter>
-  );
+  </ThemeProvider>
+);
 }
 
 export default App;

@@ -1,17 +1,9 @@
 
 import { useState } from "react";
 import {
-  Plus,
-  Search,
-  Pencil,
-  Eye,
-  X,
-  Save,
-  Tag,
-  Globe,
-  CircleCheck,
-  CircleX
+  Plus, Search, Pencil, Eye, X, Save, Tag, Globe, CircleCheck, CircleX
 } from "lucide-react";
+import { useTheme } from "../../context/ThemeContext";
 
 const initialBrands = [
   {
@@ -52,15 +44,19 @@ const emptyForm = {
 };
 
 function Marcas() {
+  const { t } = useTheme();
+
   const [brands, setBrands] = useState(initialBrands);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todas");
-
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
+
+  const translateStatus = (status) =>
+    status === "Activa" ? t("active") : t("inactive");
 
   const filteredBrands = brands.filter((brand) => {
     const matchesSearch =
@@ -103,11 +99,7 @@ function Marcas() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    setForm((previous) => ({
-      ...previous,
-      [name]: value
-    }));
+    setForm((previous) => ({ ...previous, [name]: value }));
   };
 
   const handleSubmit = (e) => {
@@ -116,7 +108,7 @@ function Marcas() {
     const name = form.nombre.trim();
 
     if (!name) {
-      setError("El nombre de la marca es obligatorio.");
+      setError(t("brandNameRequired"));
       return;
     }
 
@@ -127,7 +119,7 @@ function Marcas() {
     );
 
     if (duplicate) {
-      setError("Esta marca ya se encuentra registrada.");
+      setError(t("brandAlreadyExists"));
       return;
     }
 
@@ -158,9 +150,7 @@ function Marcas() {
 
     setBrands((previous) =>
       previous.map((item) =>
-        item.id === brand.id
-          ? { ...item, estado: newStatus }
-          : item
+        item.id === brand.id ? { ...item, estado: newStatus } : item
       )
     );
   };
@@ -169,15 +159,12 @@ function Marcas() {
     <div className="page-content">
       <div className="welcome-section">
         <div>
-          <h1>Marcas</h1>
-          <p>
-            Administra las marcas asociadas a los productos de tu negocio.
-          </p>
+          <h1>{t("brands")}</h1>
+          <p>{t("brandsDescription")}</p>
         </div>
 
         <button className="primary-button" onClick={openCreate}>
-          <Plus size={18} />
-          Nueva marca
+          <Plus size={18} /> {t("newBrand")}
         </button>
       </div>
 
@@ -185,9 +172,8 @@ function Marcas() {
         <div className="summary-icon">
           <Tag size={24} />
         </div>
-
         <div>
-          <span>Total de marcas</span>
+          <span>{t("totalBrands")}</span>
           <h2>{brands.length}</h2>
         </div>
       </div>
@@ -195,8 +181,8 @@ function Marcas() {
       <div className="table-container">
         <div className="table-toolbar">
           <div>
-            <h2>Listado de marcas</h2>
-            <p>Consulta y administra las marcas registradas.</p>
+            <h2>{t("brandList")}</h2>
+            <p>{t("brandListDescription")}</p>
           </div>
 
           <div className="category-filters">
@@ -204,7 +190,7 @@ function Marcas() {
               <Search size={17} />
               <input
                 type="text"
-                placeholder="Buscar marca..."
+                placeholder={t("searchBrand")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -215,9 +201,9 @@ function Marcas() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="Todas">Todos los estados</option>
-              <option value="Activa">Activas</option>
-              <option value="Inactiva">Inactivas</option>
+              <option value="Todas">{t("allStatuses")}</option>
+              <option value="Activa">{t("activeBrands")}</option>
+              <option value="Inactiva">{t("inactiveBrands")}</option>
             </select>
           </div>
         </div>
@@ -226,12 +212,12 @@ function Marcas() {
           <table>
             <thead>
               <tr>
-                <th>Marca</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Sitio web</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th>{t("brand")}</th>
+                <th>{t("name")}</th>
+                <th>{t("description")}</th>
+                <th>{t("website")}</th>
+                <th>{t("status")}</th>
+                <th>{t("actions")}</th>
               </tr>
             </thead>
 
@@ -244,11 +230,9 @@ function Marcas() {
                     </div>
                   </td>
 
-                  <td>
-                    <strong>{brand.nombre}</strong>
-                  </td>
+                  <td><strong>{brand.nombre}</strong></td>
 
-                  <td>{brand.descripcion || "Sin descripción"}</td>
+                  <td>{brand.descripcion || t("noDescription")}</td>
 
                   <td>
                     {brand.sitio ? (
@@ -258,11 +242,10 @@ function Marcas() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        <Globe size={14} />
-                        Visitar sitio
+                        <Globe size={14} /> {t("visitWebsite")}
                       </a>
                     ) : (
-                      "No registrado"
+                      t("notRegistered")
                     )}
                   </td>
 
@@ -274,21 +257,21 @@ function Marcas() {
                           : "status-inactive"
                       }
                     >
-                      {brand.estado}
+                      {translateStatus(brand.estado)}
                     </span>
                   </td>
 
                   <td>
                     <div className="table-actions">
                       <button
-                        title="Ver detalles"
+                        title={t("viewDetails")}
                         onClick={() => openView(brand)}
                       >
                         <Eye size={17} />
                       </button>
 
                       <button
-                        title="Editar"
+                        title={t("edit")}
                         onClick={() => openEdit(brand)}
                       >
                         <Pencil size={17} />
@@ -297,8 +280,8 @@ function Marcas() {
                       <button
                         title={
                           brand.estado === "Activa"
-                            ? "Desactivar"
-                            : "Activar"
+                            ? t("deactivate")
+                            : t("activate")
                         }
                         onClick={() => toggleStatus(brand)}
                       >
@@ -316,7 +299,7 @@ function Marcas() {
               {filteredBrands.length === 0 && (
                 <tr>
                   <td colSpan="6" className="empty-state">
-                    No se encontraron marcas.
+                    {t("noBrandsFound")}
                   </td>
                 </tr>
               )}
@@ -325,7 +308,7 @@ function Marcas() {
         </div>
 
         <div className="table-footer">
-          Mostrando {filteredBrands.length} de {brands.length} marcas
+          {t("showing")} {filteredBrands.length} {t("of")} {brands.length} {t("brands").toLowerCase()}
         </div>
       </div>
 
@@ -339,23 +322,23 @@ function Marcas() {
               <div>
                 <h2>
                   {modalMode === "create"
-                    ? "Nueva marca"
+                    ? t("newBrand")
                     : modalMode === "edit"
-                    ? "Editar marca"
-                    : "Detalles de marca"}
+                    ? t("editBrand")
+                    : t("brandDetails")}
                 </h2>
 
                 <p>
                   {modalMode === "view"
-                    ? "Consulta la información de esta marca."
-                    : "Completa los datos de la marca."}
+                    ? t("brandViewDescription")
+                    : t("brandFormDescription")}
                 </p>
               </div>
 
               <button
                 className="modal-close"
                 onClick={closeModal}
-                aria-label="Cerrar"
+                aria-label={t("close")}
               >
                 <X size={20} />
               </button>
@@ -370,59 +353,56 @@ function Marcas() {
                 <h3>{selectedBrand.nombre}</h3>
 
                 <p>
-                  {selectedBrand.descripcion || "Sin descripción"}
+                  {selectedBrand.descripcion || t("noDescription")}
                 </p>
 
                 <div className="detail-row">
-                  <span>Sitio web</span>
+                  <span>{t("website")}</span>
                   <strong>
-                    {selectedBrand.sitio || "No registrado"}
+                    {selectedBrand.sitio || t("notRegistered")}
                   </strong>
                 </div>
 
                 <div className="detail-row">
-                  <span>Estado</span>
-                  <strong>{selectedBrand.estado}</strong>
+                  <span>{t("status")}</span>
+                  <strong>{translateStatus(selectedBrand.estado)}</strong>
                 </div>
 
                 <button
                   className="primary-button full-button"
                   onClick={closeModal}
                 >
-                  Cerrar
+                  {t("close")}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                  <label>Nombre de la marca *</label>
-
+                  <label>{t("brandName")} *</label>
                   <input
                     name="nombre"
                     value={form.nombre}
                     onChange={handleChange}
-                    placeholder="Ej. Samsung"
+                    placeholder={t("brandNamePlaceholder")}
                     maxLength={60}
                     autoFocus
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Descripción</label>
-
+                  <label>{t("description")}</label>
                   <textarea
                     name="descripcion"
                     value={form.descripcion}
                     onChange={handleChange}
-                    placeholder="Describe los productos de esta marca..."
+                    placeholder={t("brandDescriptionPlaceholder")}
                     rows="3"
                     maxLength={200}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Sitio web</label>
-
+                  <label>{t("website")}</label>
                   <input
                     type="url"
                     name="sitio"
@@ -433,21 +413,18 @@ function Marcas() {
                 </div>
 
                 <div className="form-group">
-                  <label>Estado</label>
-
+                  <label>{t("status")}</label>
                   <select
                     name="estado"
                     value={form.estado}
                     onChange={handleChange}
                   >
-                    <option value="Activa">Activa</option>
-                    <option value="Inactiva">Inactiva</option>
+                    <option value="Activa">{t("active")}</option>
+                    <option value="Inactiva">{t("inactive")}</option>
                   </select>
                 </div>
 
-                {error && (
-                  <div className="form-error">{error}</div>
-                )}
+                {error && <div className="form-error">{error}</div>}
 
                 <div className="modal-footer">
                   <button
@@ -455,14 +432,14 @@ function Marcas() {
                     className="secondary-button"
                     onClick={closeModal}
                   >
-                    Cancelar
+                    {t("cancel")}
                   </button>
 
                   <button type="submit" className="primary-button">
                     <Save size={17} />
                     {modalMode === "edit"
-                      ? "Guardar cambios"
-                      : "Guardar marca"}
+                      ? t("saveChanges")
+                      : t("saveBrand")}
                   </button>
                 </div>
               </form>

@@ -1,20 +1,28 @@
+
 import { useLocation } from "react-router-dom";
 import { Search, Bell } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
-const pageTitles = {
-  "/": "Dashboard",
-  "/categorias": "Categorías",
-  "/marcas": "Marcas",
-  "/proveedores": "Proveedores",
-  "/clientes": "Clientes",
-  "/unidades": "Unidades",
-  "/almacenes": "Almacenes"
+const pageTitleKeys = {
+  "/": "dashboard",
+  "/categorias": "categories",
+  "/marcas": "brands",
+  "/proveedores": "suppliers",
+  "/clientes": "clients",
+  "/unidades": "units",
+  "/almacenes": "warehouses",
+  "/usuarios": "users",
+  "/roles-permisos": "roles",
+  "/empresa-sucursales": "company",
+  "/reportes": "reports",
+  "/configuracion": "settings"
 };
 
 function Topbar() {
   const location = useLocation();
+  const { t } = useTheme();
 
-  const title = pageTitles[location.pathname] || "Catálogos";
+  const title = t(pageTitleKeys[location.pathname] || "catalogs");
 
   return (
     <header className="topbar">
@@ -29,18 +37,21 @@ function Topbar() {
           <Search size={16} />
           <input
             type="text"
-            placeholder="Buscar..."
+            placeholder={t("search")}
           />
         </div>
 
-        <button className="notification-button" aria-label="Notificaciones">
+        <button
+          className="notification-button"
+          aria-label={t("notifications")}
+        >
           <Bell size={19} />
           <span className="notification-dot"></span>
         </button>
 
         <div className="business-info">
           <strong>Comercial del Valle</strong>
-          <span>Panel administrativo</span>
+          <span>{t("adminPanel")}</span>
         </div>
       </div>
     </header>

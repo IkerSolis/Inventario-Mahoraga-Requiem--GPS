@@ -17,6 +17,8 @@ import {
   CircleX
 } from "lucide-react";
 
+import { useTheme } from "../../context/ThemeContext";
+
 const iconOptions = {
   folder: Folder,
   package: Package,
@@ -74,6 +76,8 @@ const emptyForm = {
 };
 
 function Categorias() {
+  const { t } = useTheme();
+
   const [categories, setCategories] = useState(initialCategories);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todas");
@@ -85,10 +89,12 @@ function Categorias() {
   const [error, setError] = useState("");
 
   const getParentName = (parentId) => {
-    if (!parentId) return "Principal";
+    if (!parentId) return t("mainCategory");
 
-    return categories.find((cat) => cat.id === Number(parentId))?.nombre
-      || "Principal";
+    return (
+      categories.find((cat) => cat.id === Number(parentId))?.nombre ||
+      t("mainCategory")
+    );
   };
 
   const filteredCategories = categories.filter((category) => {
@@ -152,7 +158,7 @@ function Categorias() {
     const name = form.nombre.trim();
 
     if (!name) {
-      setError("El nombre de la categoría es obligatorio.");
+      setError(t("categoryNameRequired"));
       return;
     }
 
@@ -163,7 +169,7 @@ function Categorias() {
     );
 
     if (duplicate) {
-      setError("Ya existe una categoría con ese nombre.");
+      setError(t("categoryDuplicate"));
       return;
     }
 
@@ -171,7 +177,7 @@ function Categorias() {
       selectedCategory &&
       Number(form.padre) === selectedCategory.id
     ) {
-      setError("Una categoría no puede ser su propia categoría padre.");
+      setError(t("categoryCannotBeOwnParent"));
       return;
     }
 
@@ -211,19 +217,33 @@ function Categorias() {
     );
   };
 
+  const translateStatus = (status) => {
+    return status === "Activa" ? t("active") : t("inactive");
+  };
+
+  const translateIcon = (icon) => {
+    const labels = {
+      folder: "folder",
+      package: "package",
+      tools: "tools",
+      shopping: "shopping",
+      laptop: "electronics"
+    };
+
+    return t(labels[icon] || "folder");
+  };
+
   return (
     <div className="page-content">
       <div className="welcome-section">
         <div>
-          <h1>Categorías</h1>
-          <p>
-            Organiza tus productos mediante categorías y subcategorías.
-          </p>
+          <h1>{t("categories")}</h1>
+          <p>{t("categoriesPageDescription")}</p>
         </div>
 
         <button className="primary-button" onClick={openCreate}>
           <Plus size={18} />
-          Nueva categoría
+          {t("newCategory")}
         </button>
       </div>
 
@@ -233,7 +253,7 @@ function Categorias() {
         </div>
 
         <div>
-          <span>Total de categorías</span>
+          <span>{t("totalCategories")}</span>
           <h2>{categories.length}</h2>
         </div>
       </div>
@@ -241,8 +261,8 @@ function Categorias() {
       <div className="table-container">
         <div className="table-toolbar">
           <div>
-            <h2>Listado de categorías</h2>
-            <p>Administra las categorías de tus productos.</p>
+            <h2>{t("categoryList")}</h2>
+            <p>{t("manageProductCategories")}</p>
           </div>
 
           <div className="category-filters">
@@ -251,7 +271,7 @@ function Categorias() {
 
               <input
                 type="text"
-                placeholder="Buscar categoría..."
+                placeholder={t("searchCategory")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -262,9 +282,9 @@ function Categorias() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="Todas">Todos los estados</option>
-              <option value="Activa">Activas</option>
-              <option value="Inactiva">Inactivas</option>
+              <option value="Todas">{t("allStatuses")}</option>
+              <option value="Activa">{t("activePlural")}</option>
+              <option value="Inactiva">{t("inactivePlural")}</option>
             </select>
           </div>
         </div>
@@ -273,12 +293,12 @@ function Categorias() {
           <table>
             <thead>
               <tr>
-                <th>Icono</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Categoría padre</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th>{t("icon")}</th>
+                <th>{t("name")}</th>
+                <th>{t("description")}</th>
+                <th>{t("parentCategory")}</th>
+                <th>{t("status")}</th>
+                <th>{t("actions")}</th>
               </tr>
             </thead>
 
@@ -304,7 +324,9 @@ function Categorias() {
                       <strong>{category.nombre}</strong>
                     </td>
 
-                    <td>{category.descripcion || "Sin descripción"}</td>
+                    <td>
+                      {category.descripcion || t("noDescription")}
+                    </td>
 
                     <td>{getParentName(category.padre)}</td>
 
@@ -316,21 +338,21 @@ function Categorias() {
                             : "status-inactive"
                         }
                       >
-                        {category.estado}
+                        {translateStatus(category.estado)}
                       </span>
                     </td>
 
                     <td>
                       <div className="table-actions">
                         <button
-                          title="Ver detalles"
+                          title={t("viewDetails")}
                           onClick={() => openView(category)}
                         >
                           <Eye size={17} />
                         </button>
 
                         <button
-                          title="Editar"
+                          title={t("edit")}
                           onClick={() => openEdit(category)}
                         >
                           <Pencil size={17} />
@@ -339,8 +361,8 @@ function Categorias() {
                         <button
                           title={
                             category.estado === "Activa"
-                              ? "Desactivar"
-                              : "Activar"
+                              ? t("deactivate")
+                              : t("activate")
                           }
                           onClick={() => toggleStatus(category)}
                         >
@@ -359,7 +381,7 @@ function Categorias() {
               {filteredCategories.length === 0 && (
                 <tr>
                   <td colSpan="6" className="empty-state">
-                    No se encontraron categorías.
+                    {t("noCategoriesFound")}
                   </td>
                 </tr>
               )}
@@ -368,7 +390,8 @@ function Categorias() {
         </div>
 
         <div className="table-footer">
-          Mostrando {filteredCategories.length} de {categories.length} categorías
+          {t("showing")} {filteredCategories.length} {t("of")}{" "}
+          {categories.length} {t("categoriesLower")}
         </div>
       </div>
 
@@ -382,23 +405,23 @@ function Categorias() {
               <div>
                 <h2>
                   {modalMode === "create"
-                    ? "Nueva categoría"
+                    ? t("newCategory")
                     : modalMode === "edit"
-                    ? "Editar categoría"
-                    : "Detalles de categoría"}
+                    ? t("editCategory")
+                    : t("categoryDetails")}
                 </h2>
 
                 <p>
                   {modalMode === "view"
-                    ? "Consulta la información registrada."
-                    : "Completa la información de la categoría."}
+                    ? t("viewCategoryInfo")
+                    : t("completeCategoryInfo")}
                 </p>
               </div>
 
               <button
                 className="modal-close"
                 onClick={closeModal}
-                aria-label="Cerrar"
+                aria-label={t("close")}
               >
                 <X size={20} />
               </button>
@@ -423,21 +446,23 @@ function Categorias() {
                 <h3>{selectedCategory.nombre}</h3>
 
                 <p>
-                  {selectedCategory.descripcion || "Sin descripción"}
+                  {selectedCategory.descripcion || t("noDescription")}
                 </p>
 
                 <div className="detail-row">
-                  <span>Categoría padre</span>
+                  <span>{t("parentCategory")}</span>
                   <strong>{getParentName(selectedCategory.padre)}</strong>
                 </div>
 
                 <div className="detail-row">
-                  <span>Estado</span>
-                  <strong>{selectedCategory.estado}</strong>
+                  <span>{t("status")}</span>
+                  <strong>
+                    {translateStatus(selectedCategory.estado)}
+                  </strong>
                 </div>
 
                 <div className="detail-row">
-                  <span>Color</span>
+                  <span>{t("color")}</span>
                   <span
                     className="category-color"
                     style={{
@@ -446,47 +471,52 @@ function Categorias() {
                   />
                 </div>
 
-                <button className="primary-button full-button" onClick={closeModal}>
-                  Cerrar
+                <button
+                  className="primary-button full-button"
+                  onClick={closeModal}
+                >
+                  {t("close")}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                  <label>Nombre de la categoría *</label>
+                  <label>{t("categoryNameRequiredLabel")}</label>
 
                   <input
                     name="nombre"
                     value={form.nombre}
                     onChange={handleChange}
-                    placeholder="Ej. Electrónica"
+                    placeholder={t("categoryNamePlaceholder")}
                     maxLength={60}
                     autoFocus
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Descripción</label>
+                  <label>{t("description")}</label>
 
                   <textarea
                     name="descripcion"
                     value={form.descripcion}
                     onChange={handleChange}
-                    placeholder="Describe esta categoría..."
+                    placeholder={t("categoryDescriptionPlaceholder")}
                     rows="3"
                     maxLength={200}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Categoría padre</label>
+                  <label>{t("parentCategory")}</label>
 
                   <select
                     name="padre"
                     value={form.padre}
                     onChange={handleChange}
                   >
-                    <option value="">Ninguna (categoría principal)</option>
+                    <option value="">
+                      {t("noneMainCategory")}
+                    </option>
 
                     {categories
                       .filter(
@@ -502,7 +532,7 @@ function Categorias() {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Color</label>
+                    <label>{t("color")}</label>
 
                     <div className="color-input">
                       <input
@@ -517,32 +547,32 @@ function Categorias() {
                   </div>
 
                   <div className="form-group">
-                    <label>Icono</label>
+                    <label>{t("icon")}</label>
 
                     <select
                       name="icono"
                       value={form.icono}
                       onChange={handleChange}
                     >
-                      <option value="folder">Carpeta</option>
-                      <option value="package">Paquete</option>
-                      <option value="tools">Herramientas</option>
-                      <option value="shopping">Compras</option>
-                      <option value="laptop">Electrónica</option>
+                      {Object.keys(iconOptions).map((icon) => (
+                        <option key={icon} value={icon}>
+                          {translateIcon(icon)}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label>Estado</label>
+                  <label>{t("status")}</label>
 
                   <select
                     name="estado"
                     value={form.estado}
                     onChange={handleChange}
                   >
-                    <option value="Activa">Activa</option>
-                    <option value="Inactiva">Inactiva</option>
+                    <option value="Activa">{t("active")}</option>
+                    <option value="Inactiva">{t("inactive")}</option>
                   </select>
                 </div>
 
@@ -556,12 +586,14 @@ function Categorias() {
                     className="secondary-button"
                     onClick={closeModal}
                   >
-                    Cancelar
+                    {t("cancel")}
                   </button>
 
                   <button type="submit" className="primary-button">
                     <Save size={17} />
-                    {modalMode === "edit" ? "Guardar cambios" : "Guardar categoría"}
+                    {modalMode === "edit"
+                      ? t("saveChanges")
+                      : t("saveCategory")}
                   </button>
                 </div>
               </form>

@@ -15,6 +15,7 @@ import {
   Save,
   ClipboardList,
 } from "lucide-react";
+import { useTheme } from "../../context/ThemeContext";
 import "./EmpresaSucursales.css";
 
 const initialCompany = {
@@ -49,6 +50,8 @@ const emptyBranch = {
 };
 
 export default function EmpresaSucursales() {
+  const { t } = useTheme();
+
   const [activeTab, setActiveTab] = useState("empresa");
   const [company, setCompany] = useState(initialCompany);
   const [branches, setBranches] = useState(initialBranches);
@@ -68,6 +71,14 @@ export default function EmpresaSucursales() {
   const activeBranches = branches.filter(
     (branch) => branch.status === "Activa"
   ).length;
+
+  const translateBranchStatus = (status) => {
+    return status === "Activa" ? t("active") : t("inactive");
+  };
+
+  const translateBranchName = (name) => {
+    return name === "Sucursal Matriz" ? t("mainBranch") : name;
+  };
 
   const updateCompany = (event) => {
     const { name, value } = event.target;
@@ -92,7 +103,7 @@ export default function EmpresaSucursales() {
 
   const saveCompany = (event) => {
     event.preventDefault();
-    setMessage("Los datos de la empresa se guardaron localmente.");
+    setMessage(t("companySavedLocally"));
   };
 
   const openNewBranch = () => {
@@ -138,7 +149,7 @@ export default function EmpresaSucursales() {
     setShowBranchModal(false);
     setBranchForm(emptyBranch);
     setEditingBranch(null);
-    setMessage("La sucursal se guardó localmente.");
+    setMessage(t("branchSavedLocally"));
   };
 
   const toggleBranchStatus = (id) => {
@@ -152,7 +163,7 @@ export default function EmpresaSucursales() {
           : branch
       )
     );
-    setMessage("Se actualizó el estado de la sucursal.");
+    setMessage(t("branchStatusUpdated"));
   };
 
   const startWizard = () => {
@@ -179,19 +190,16 @@ export default function EmpresaSucursales() {
     ]);
     setShowWizard(false);
     setActiveTab("empresa");
-    setMessage("La configuración inicial se completó localmente.");
+    setMessage(t("initialSetupCompleted"));
   };
 
   return (
     <main className="company-page">
       <header className="company-header">
         <div>
-          <span className="company-eyebrow">SEGURIDAD Y ESTRUCTURA</span>
-          <h1>Empresa y sucursales</h1>
-          <p>
-            Administra la información de tu empresa y los establecimientos
-            donde opera tu negocio.
-          </p>
+          <span className="company-eyebrow">{t("companyEyebrow")}</span>
+          <h1>{t("companyBranchesTitle")}</h1>
+          <p>{t("companyBranchesDescription")}</p>
         </div>
 
         <button
@@ -200,7 +208,7 @@ export default function EmpresaSucursales() {
           onClick={startWizard}
         >
           <ClipboardList size={18} />
-          Asistente inicial
+          {t("initialSetupWizard")}
         </button>
       </header>
 
@@ -210,8 +218,8 @@ export default function EmpresaSucursales() {
             <Building2 size={21} />
           </div>
           <div>
-            <span>Empresa</span>
-            <strong>{company.commercialName || "Sin configurar"}</strong>
+            <span>{t("companyLabel")}</span>
+            <strong>{company.commercialName || t("notConfigured")}</strong>
           </div>
         </article>
 
@@ -220,7 +228,7 @@ export default function EmpresaSucursales() {
             <Store size={21} />
           </div>
           <div>
-            <span>Total de sucursales</span>
+            <span>{t("totalBranches")}</span>
             <strong>{branches.length}</strong>
           </div>
         </article>
@@ -230,7 +238,7 @@ export default function EmpresaSucursales() {
             <CheckCircle2 size={21} />
           </div>
           <div>
-            <span>Sucursales activas</span>
+            <span>{t("activeBranches")}</span>
             <strong>{activeBranches}</strong>
           </div>
         </article>
@@ -243,7 +251,7 @@ export default function EmpresaSucursales() {
           onClick={() => setActiveTab("empresa")}
         >
           <Building2 size={17} />
-          Datos de empresa
+          {t("companyInformationTab")}
         </button>
 
         <button
@@ -252,7 +260,7 @@ export default function EmpresaSucursales() {
           onClick={() => setActiveTab("sucursales")}
         >
           <Store size={17} />
-          Sucursales
+          {t("branchesTab")}
         </button>
       </nav>
 
@@ -267,8 +275,8 @@ export default function EmpresaSucursales() {
         <section className="company-panel">
           <div className="company-panel-heading">
             <div>
-              <h2>Información general</h2>
-              <p>Datos principales de identificación de tu negocio.</p>
+              <h2>{t("generalInformation")}</h2>
+              <p>{t("businessIdentificationDescription")}</p>
             </div>
             <Building2 size={25} />
           </div>
@@ -276,50 +284,50 @@ export default function EmpresaSucursales() {
           <form onSubmit={saveCompany} className="company-form">
             <div className="company-form-grid">
               <label>
-                Nombre comercial *
+                {t("commercialName")} *
                 <input
                   name="commercialName"
                   value={company.commercialName}
                   onChange={updateCompany}
-                  placeholder="Ej. GestiónInv"
+                  placeholder={t("commercialNamePlaceholder")}
                   required
                 />
               </label>
 
               <label>
-                Razón social
+                {t("legalName")}
                 <input
                   name="legalName"
                   value={company.legalName}
                   onChange={updateCompany}
-                  placeholder="Nombre legal de la empresa"
+                  placeholder={t("legalNamePlaceholder")}
                 />
               </label>
 
               <label>
-                RFC
+                {t("taxId")}
                 <input
                   name="rfc"
                   value={company.rfc}
                   onChange={updateCompany}
-                  placeholder="RFC de la empresa"
+                  placeholder={t("taxIdPlaceholder")}
                   maxLength={13}
                 />
               </label>
 
               <label>
-                Teléfono
+                {t("phone")}
                 <input
                   name="phone"
                   value={company.phone}
                   onChange={updateCompany}
-                  placeholder="Número de contacto"
+                  placeholder={t("contactPhonePlaceholder")}
                   type="tel"
                 />
               </label>
 
               <label>
-                Correo electrónico
+                {t("emailAddress")}
                 <input
                   name="email"
                   value={company.email}
@@ -330,12 +338,12 @@ export default function EmpresaSucursales() {
               </label>
 
               <label className="company-full-width">
-                Dirección fiscal o principal
+                {t("taxOrMainAddress")}
                 <textarea
                   name="address"
                   value={company.address}
                   onChange={updateCompany}
-                  placeholder="Calle, número, colonia, ciudad, estado y código postal"
+                  placeholder={t("mainAddressPlaceholder")}
                   rows={3}
                 />
               </label>
@@ -344,7 +352,7 @@ export default function EmpresaSucursales() {
             <div className="company-form-actions">
               <button type="submit" className="company-primary-button">
                 <Save size={17} />
-                Guardar información
+                {t("saveInformation")}
               </button>
             </div>
           </form>
@@ -355,10 +363,8 @@ export default function EmpresaSucursales() {
         <section className="company-panel">
           <div className="company-panel-heading">
             <div>
-              <h2>Administración de sucursales</h2>
-              <p>
-                Registra y administra los establecimientos de tu empresa.
-              </p>
+              <h2>{t("branchManagement")}</h2>
+              <p>{t("branchManagementDescription")}</p>
             </div>
 
             <button
@@ -367,22 +373,22 @@ export default function EmpresaSucursales() {
               onClick={openNewBranch}
             >
               <Plus size={17} />
-              Nueva sucursal
+              {t("newBranch")}
             </button>
           </div>
 
           {branches.length === 0 ? (
             <div className="company-empty">
               <Store size={36} />
-              <h3>Aún no hay sucursales</h3>
-              <p>Registra la primera sucursal de tu empresa.</p>
+              <h3>{t("noBranchesYet")}</h3>
+              <p>{t("registerFirstBranchDescription")}</p>
               <button
                 type="button"
                 className="company-primary-button"
                 onClick={openNewBranch}
               >
                 <Plus size={17} />
-                Registrar sucursal
+                {t("registerBranch")}
               </button>
             </div>
           ) : (
@@ -400,25 +406,25 @@ export default function EmpresaSucursales() {
                           : "branch-status inactive"
                       }
                     >
-                      {branch.status}
+                      {translateBranchStatus(branch.status)}
                     </span>
                   </div>
 
-                  <h3>{branch.name}</h3>
+                  <h3>{translateBranchName(branch.name)}</h3>
                   <span className="branch-code">{branch.code}</span>
 
                   <div className="branch-details">
                     <p>
                       <MapPin size={15} />
-                      {branch.address || "Dirección no registrada"}
+                      {branch.address || t("addressNotRegistered")}
                     </p>
                     <p>
                       <Phone size={15} />
-                      {branch.phone || "Sin teléfono"}
+                      {branch.phone || t("noPhone")}
                     </p>
                     <p>
                       <Mail size={15} />
-                      {branch.email || "Sin correo"}
+                      {branch.email || t("noEmail")}
                     </p>
                   </div>
 
@@ -428,7 +434,7 @@ export default function EmpresaSucursales() {
                       onClick={() => openEditBranch(branch)}
                     >
                       <Pencil size={15} />
-                      Editar
+                      {t("edit")}
                     </button>
 
                     <button
@@ -436,7 +442,9 @@ export default function EmpresaSucursales() {
                       onClick={() => toggleBranchStatus(branch.id)}
                     >
                       <Power size={15} />
-                      {branch.status === "Activa" ? "Desactivar" : "Activar"}
+                      {branch.status === "Activa"
+                        ? t("deactivate")
+                        : t("activate")}
                     </button>
                   </div>
                 </article>
@@ -457,16 +465,16 @@ export default function EmpresaSucursales() {
             <div className="company-modal-heading">
               <div>
                 <h2 id="branch-modal-title">
-                  {editingBranch !== null ? "Editar sucursal" : "Nueva sucursal"}
+                  {editingBranch !== null ? t("editBranch") : t("newBranch")}
                 </h2>
-                <p>Completa la información del establecimiento.</p>
+                <p>{t("branchFormDescription")}</p>
               </div>
 
               <button
                 type="button"
                 className="company-close-button"
                 onClick={() => setShowBranchModal(false)}
-                aria-label="Cerrar"
+                aria-label={t("close")}
               >
                 <X size={20} />
               </button>
@@ -475,50 +483,50 @@ export default function EmpresaSucursales() {
             <form onSubmit={saveBranch} className="company-form">
               <div className="company-form-grid">
                 <label>
-                  Nombre de sucursal *
+                  {t("branchName")} *
                   <input
                     name="name"
                     value={branchForm.name}
                     onChange={updateBranchForm}
-                    placeholder="Ej. Sucursal Norte"
+                    placeholder={t("branchNamePlaceholder")}
                     required
                   />
                 </label>
 
                 <label>
-                  Código *
+                  {t("branchCode")} *
                   <input
                     name="code"
                     value={branchForm.code}
                     onChange={updateBranchForm}
-                    placeholder="Ej. NOR-001"
+                    placeholder={t("branchCodePlaceholder")}
                     required
                   />
                 </label>
 
                 <label>
-                  Responsable
+                  {t("manager")}
                   <input
                     name="manager"
                     value={branchForm.manager}
                     onChange={updateBranchForm}
-                    placeholder="Nombre del encargado"
+                    placeholder={t("managerNamePlaceholder")}
                   />
                 </label>
 
                 <label>
-                  Teléfono
+                  {t("phone")}
                   <input
                     name="phone"
                     value={branchForm.phone}
                     onChange={updateBranchForm}
-                    placeholder="Teléfono"
+                    placeholder={t("contactPhonePlaceholder")}
                     type="tel"
                   />
                 </label>
 
                 <label className="company-full-width">
-                  Correo electrónico
+                  {t("emailAddress")}
                   <input
                     name="email"
                     value={branchForm.email}
@@ -529,12 +537,12 @@ export default function EmpresaSucursales() {
                 </label>
 
                 <label className="company-full-width">
-                  Dirección
+                  {t("address")}
                   <textarea
                     name="address"
                     value={branchForm.address}
                     onChange={updateBranchForm}
-                    placeholder="Dirección completa de la sucursal"
+                    placeholder={t("branchAddressPlaceholder")}
                     rows={3}
                   />
                 </label>
@@ -546,11 +554,11 @@ export default function EmpresaSucursales() {
                   className="company-secondary-button"
                   onClick={() => setShowBranchModal(false)}
                 >
-                  Cancelar
+                  {t("cancel")}
                 </button>
                 <button type="submit" className="company-primary-button">
                   <Save size={17} />
-                  Guardar sucursal
+                  {t("saveBranch")}
                 </button>
               </div>
             </form>
@@ -568,16 +576,20 @@ export default function EmpresaSucursales() {
           >
             <div className="company-modal-heading">
               <div>
-                <span className="company-eyebrow">ASISTENTE DE CONFIGURACIÓN</span>
-                <h2 id="wizard-title">Configura tu negocio</h2>
-                <p>Paso {wizardStep} de 2</p>
+                <span className="company-eyebrow">
+                  {t("setupAssistant")}
+                </span>
+                <h2 id="wizard-title">{t("configureYourBusiness")}</h2>
+                <p>
+                  {t("step")} {wizardStep} {t("of")} 2
+                </p>
               </div>
 
               <button
                 type="button"
                 className="company-close-button"
                 onClick={() => setShowWizard(false)}
-                aria-label="Cerrar"
+                aria-label={t("close")}
               >
                 <X size={20} />
               </button>
@@ -596,10 +608,10 @@ export default function EmpresaSucursales() {
                   setWizardStep(2);
                 }}
               >
-                <h3>1. Datos de la empresa</h3>
+                <h3>{t("wizardCompanyStep")}</h3>
                 <div className="company-form-grid">
                   <label>
-                    Nombre comercial *
+                    {t("commercialName")} *
                     <input
                       name="commercialName"
                       value={wizardCompany.commercialName}
@@ -609,7 +621,7 @@ export default function EmpresaSucursales() {
                   </label>
 
                   <label>
-                    Razón social
+                    {t("legalName")}
                     <input
                       name="legalName"
                       value={wizardCompany.legalName}
@@ -618,7 +630,7 @@ export default function EmpresaSucursales() {
                   </label>
 
                   <label>
-                    RFC
+                    {t("taxId")}
                     <input
                       name="rfc"
                       value={wizardCompany.rfc}
@@ -628,7 +640,7 @@ export default function EmpresaSucursales() {
                   </label>
 
                   <label>
-                    Teléfono
+                    {t("phone")}
                     <input
                       name="phone"
                       type="tel"
@@ -638,7 +650,7 @@ export default function EmpresaSucursales() {
                   </label>
 
                   <label className="company-full-width">
-                    Correo electrónico
+                    {t("emailAddress")}
                     <input
                       name="email"
                       type="email"
@@ -648,7 +660,7 @@ export default function EmpresaSucursales() {
                   </label>
 
                   <label className="company-full-width">
-                    Dirección
+                    {t("address")}
                     <textarea
                       name="address"
                       value={wizardCompany.address}
@@ -660,17 +672,17 @@ export default function EmpresaSucursales() {
 
                 <div className="company-form-actions">
                   <button type="submit" className="company-primary-button">
-                    Continuar
+                    {t("continue")}
                     <ChevronRight size={17} />
                   </button>
                 </div>
               </form>
             ) : (
               <form className="company-form" onSubmit={finishWizard}>
-                <h3>2. Registra tu primera sucursal</h3>
+                <h3>{t("wizardBranchStep")}</h3>
                 <div className="company-form-grid">
                   <label>
-                    Nombre de sucursal *
+                    {t("branchName")} *
                     <input
                       name="name"
                       value={wizardBranch.name}
@@ -680,7 +692,7 @@ export default function EmpresaSucursales() {
                   </label>
 
                   <label>
-                    Código *
+                    {t("branchCode")} *
                     <input
                       name="code"
                       value={wizardBranch.code}
@@ -690,7 +702,7 @@ export default function EmpresaSucursales() {
                   </label>
 
                   <label>
-                    Responsable
+                    {t("manager")}
                     <input
                       name="manager"
                       value={wizardBranch.manager}
@@ -699,7 +711,7 @@ export default function EmpresaSucursales() {
                   </label>
 
                   <label>
-                    Teléfono
+                    {t("phone")}
                     <input
                       name="phone"
                       type="tel"
@@ -709,7 +721,7 @@ export default function EmpresaSucursales() {
                   </label>
 
                   <label className="company-full-width">
-                    Correo electrónico
+                    {t("emailAddress")}
                     <input
                       name="email"
                       type="email"
@@ -719,7 +731,7 @@ export default function EmpresaSucursales() {
                   </label>
 
                   <label className="company-full-width">
-                    Dirección
+                    {t("address")}
                     <textarea
                       name="address"
                       value={wizardBranch.address}
@@ -735,11 +747,11 @@ export default function EmpresaSucursales() {
                     className="company-secondary-button"
                     onClick={() => setWizardStep(1)}
                   >
-                    Regresar
+                    {t("back")}
                   </button>
                   <button type="submit" className="company-primary-button">
                     <CheckCircle2 size={17} />
-                    Finalizar configuración
+                    {t("finishSetup")}
                   </button>
                 </div>
               </form>

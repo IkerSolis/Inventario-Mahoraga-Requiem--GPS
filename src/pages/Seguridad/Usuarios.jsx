@@ -2,10 +2,11 @@
 import { useMemo, useState } from "react";
 import {
   Plus, Search, Users, UserCheck, UserX, Mail,
-  Pencil, Eye, X, Save, Shield, Monitor,
+  Pencil, Eye, X, Save, Monitor,
   Smartphone, LogOut, CircleCheck, Clock,
   Ban, Send
 } from "lucide-react";
+import { useTheme } from "../../context/ThemeContext";
 
 const usuariosIniciales = [
   {
@@ -68,6 +69,8 @@ const formularioVacio = {
 };
 
 export default function Usuarios() {
+  const { t } = useTheme();
+
   const [usuarios, setUsuarios] = useState(usuariosIniciales);
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("Todos");
@@ -75,6 +78,27 @@ export default function Usuarios() {
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [formulario, setFormulario] = useState(formularioVacio);
   const [error, setError] = useState("");
+
+  const traducirEstado = (estado) => {
+    const estados = {
+      Activo: t("active"),
+      Pendiente: t("pending"),
+      Desactivado: t("deactivated"),
+    };
+
+    return estados[estado] || estado;
+  };
+
+  const traducirSucursal = (sucursal) => {
+    const sucursales = {
+      Matriz: t("headquarters"),
+      "Sucursal Norte": t("northBranch"),
+      "Sucursal Sur": t("southBranch"),
+      Remoto: t("remote"),
+    };
+
+    return sucursales[sucursal] || sucursal;
+  };
 
   const filtrados = useMemo(() => {
     return usuarios.filter((usuario) => {
@@ -121,7 +145,7 @@ export default function Usuarios() {
       u.correo.toLowerCase() === correo &&
       u.id !== usuarioSeleccionado?.id
     )) {
-      setError("Ya existe un usuario con ese correo.");
+      setError(t("userEmailExists"));
       return;
     }
 
@@ -157,7 +181,11 @@ export default function Usuarios() {
     setUsuarios((actuales) =>
       actuales.map((u) =>
         u.id === usuario.id
-          ? { ...u, estado: nuevoEstado, sesiones: nuevoEstado === "Desactivado" ? [] : u.sesiones }
+          ? {
+              ...u,
+              estado: nuevoEstado,
+              sesiones: nuevoEstado === "Desactivado" ? [] : u.sesiones,
+            }
           : u
       )
     );
@@ -200,44 +228,56 @@ export default function Usuarios() {
     <div className="page-content">
       <section className="welcome-section">
         <div>
-          <h1>Gestión de usuarios</h1>
-          <p>Administra las cuentas, invitaciones y sesiones del sistema.</p>
+          <h1>{t("userManagement")}</h1>
+          <p>{t("userManagementDescription")}</p>
         </div>
         <button className="primary-button" onClick={abrirNuevo}>
-          <Plus size={18} /> Invitar usuario
+          <Plus size={18} /> {t("inviteUser")}
         </button>
       </section>
 
       <section className="users-summary">
         <article className="users-summary-card">
           <div className="users-summary-icon"><Users /></div>
-          <div><span>Total de usuarios</span><strong>{usuarios.length}</strong></div>
+          <div>
+            <span>{t("totalUsers")}</span>
+            <strong>{usuarios.length}</strong>
+          </div>
         </article>
         <article className="users-summary-card">
           <div className="users-summary-icon"><UserCheck /></div>
-          <div><span>Activos</span><strong>{activos}</strong></div>
+          <div>
+            <span>{t("activeUsers")}</span>
+            <strong>{activos}</strong>
+          </div>
         </article>
         <article className="users-summary-card">
           <div className="users-summary-icon"><Clock /></div>
-          <div><span>Invitaciones pendientes</span><strong>{pendientes}</strong></div>
+          <div>
+            <span>{t("pendingInvitations")}</span>
+            <strong>{pendientes}</strong>
+          </div>
         </article>
         <article className="users-summary-card">
           <div className="users-summary-icon"><UserX /></div>
-          <div><span>Desactivados</span><strong>{desactivados}</strong></div>
+          <div>
+            <span>{t("deactivatedUsers")}</span>
+            <strong>{desactivados}</strong>
+          </div>
         </article>
       </section>
 
       <section className="table-container">
         <div className="table-toolbar">
           <div>
-            <h2>Usuarios registrados</h2>
-            <p>Consulta y administra las cuentas del sistema.</p>
+            <h2>{t("registeredUsers")}</h2>
+            <p>{t("registeredUsersDescription")}</p>
           </div>
           <div className="users-toolbar-actions">
             <div className="search-box">
               <Search size={17} />
               <input
-                placeholder="Buscar por nombre o correo..."
+                placeholder={t("searchUser")}
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
               />
@@ -247,10 +287,10 @@ export default function Usuarios() {
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
             >
-              <option>Todos</option>
-              <option>Activo</option>
-              <option>Pendiente</option>
-              <option>Desactivado</option>
+              <option value="Todos">{t("allStatuses")}</option>
+              <option value="Activo">{t("active")}</option>
+              <option value="Pendiente">{t("pending")}</option>
+              <option value="Desactivado">{t("deactivated")}</option>
             </select>
           </div>
         </div>
@@ -259,12 +299,12 @@ export default function Usuarios() {
           <table>
             <thead>
               <tr>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Sucursal</th>
-                <th>Estado</th>
-                <th>Sesiones</th>
-                <th>Acciones</th>
+                <th>{t("user")}</th>
+                <th>{t("role")}</th>
+                <th>{t("branch")}</th>
+                <th>{t("status")}</th>
+                <th>{t("sessions")}</th>
+                <th>{t("actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -282,10 +322,10 @@ export default function Usuarios() {
                     </div>
                   </td>
                   <td><span className="role-badge">{usuario.rol}</span></td>
-                  <td>{usuario.sucursal}</td>
+                  <td>{traducirSucursal(usuario.sucursal)}</td>
                   <td>
                     <span className={`user-status ${estadoClase(usuario.estado)}`}>
-                      {usuario.estado}
+                      {traducirEstado(usuario.estado)}
                     </span>
                   </td>
                   <td>
@@ -295,21 +335,23 @@ export default function Usuarios() {
                   </td>
                   <td>
                     <div className="table-actions">
-                      <button title="Ver usuario" onClick={() => abrirDetalle(usuario)}>
+                      <button title={t("viewUser")} onClick={() => abrirDetalle(usuario)}>
                         <Eye size={17} />
                       </button>
-                      <button title="Editar usuario" onClick={() => abrirEdicion(usuario)}>
+                      <button title={t("editUser")} onClick={() => abrirEdicion(usuario)}>
                         <Pencil size={17} />
                       </button>
-                      <button title="Sesiones" onClick={() => abrirSesiones(usuario)}>
+                      <button title={t("sessions")} onClick={() => abrirSesiones(usuario)}>
                         <Monitor size={17} />
                       </button>
                       {usuario.estado !== "Pendiente" && (
                         <button
-                          title={usuario.estado === "Activo" ? "Desactivar" : "Activar"}
+                          title={usuario.estado === "Activo" ? t("deactivate") : t("activate")}
                           onClick={() => cambiarEstado(usuario)}
                         >
-                          {usuario.estado === "Activo" ? <Ban size={17} /> : <CircleCheck size={17} />}
+                          {usuario.estado === "Activo"
+                            ? <Ban size={17} />
+                            : <CircleCheck size={17} />}
                         </button>
                       )}
                     </div>
@@ -317,13 +359,17 @@ export default function Usuarios() {
                 </tr>
               ))}
               {filtrados.length === 0 && (
-                <tr><td colSpan="6" className="empty-state">No se encontraron usuarios.</td></tr>
+                <tr>
+                  <td colSpan="6" className="empty-state">
+                    {t("noUsersFound")}
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         </div>
         <div className="table-footer">
-          Mostrando {filtrados.length} de {usuarios.length} usuarios
+          {t("showing")} {filtrados.length} {t("of")} {usuarios.length} {t("users")}
         </div>
       </section>
 
@@ -333,34 +379,36 @@ export default function Usuarios() {
             <div className="modal-header">
               <div>
                 <h2>
-                  {modal === "nuevo" && "Invitar usuario"}
-                  {modal === "editar" && "Editar usuario"}
-                  {modal === "detalle" && "Información del usuario"}
-                  {modal === "sesiones" && "Sesiones activas"}
+                  {modal === "nuevo" && t("inviteUser")}
+                  {modal === "editar" && t("editUser")}
+                  {modal === "detalle" && t("userInformation")}
+                  {modal === "sesiones" && t("activeSessions")}
                 </h2>
                 <p>
-                  {modal === "nuevo" && "Registra una invitación para un nuevo integrante."}
-                  {modal === "editar" && "Actualiza la información de la cuenta."}
-                  {modal === "detalle" && "Consulta los datos de esta cuenta."}
-                  {modal === "sesiones" && "Consulta y cierra sesiones de este usuario."}
+                  {modal === "nuevo" && t("newUserDescription")}
+                  {modal === "editar" && t("editUserDescription")}
+                  {modal === "detalle" && t("userInformationDescription")}
+                  {modal === "sesiones" && t("activeSessionsDescription")}
                 </p>
               </div>
-              <button className="modal-close" onClick={() => setModal("")}><X /></button>
+              <button className="modal-close" onClick={() => setModal("")}>
+                <X />
+              </button>
             </div>
 
             {(modal === "nuevo" || modal === "editar") && (
               <form onSubmit={guardarUsuario}>
                 <div className="form-group">
-                  <label>Nombre completo</label>
+                  <label>{t("fullName")}</label>
                   <input
                     required
                     value={formulario.nombre}
                     onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })}
-                    placeholder="Ej. Juan Pérez"
+                    placeholder={t("userNamePlaceholder")}
                   />
                 </div>
                 <div className="form-group">
-                  <label>Correo electrónico</label>
+                  <label>{t("emailAddress")}</label>
                   <input
                     required
                     type="email"
@@ -371,7 +419,7 @@ export default function Usuarios() {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Rol asignado</label>
+                    <label>{t("assignedRole")}</label>
                     <select
                       value={formulario.rol}
                       onChange={(e) => setFormulario({ ...formulario, rol: e.target.value })}
@@ -382,14 +430,14 @@ export default function Usuarios() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Sucursal</label>
+                    <label>{t("branch")}</label>
                     <select
                       value={formulario.sucursal}
                       onChange={(e) => setFormulario({ ...formulario, sucursal: e.target.value })}
                     >
-                      <option>Matriz</option>
-                      <option>Sucursal Norte</option>
-                      <option>Sucursal Sur</option>
+                      <option value="Matriz">{t("headquarters")}</option>
+                      <option value="Sucursal Norte">{t("northBranch")}</option>
+                      <option value="Sucursal Sur">{t("southBranch")}</option>
                     </select>
                   </div>
                 </div>
@@ -398,14 +446,18 @@ export default function Usuarios() {
 
                 {modal === "nuevo" && (
                   <p className="invitation-note">
-                    <Mail size={16} /> La invitación se registrará como pendiente. El envío real de correo se integrará con el backend.
+                    <Mail size={16} /> {t("invitationNote")}
                   </p>
                 )}
 
                 <div className="modal-footer">
-                  <button type="button" className="secondary-button" onClick={() => setModal("")}>Cancelar</button>
+                  <button type="button" className="secondary-button" onClick={() => setModal("")}>
+                    {t("cancel")}
+                  </button>
                   <button type="submit" className="primary-button">
-                    {modal === "nuevo" ? <><Send size={16} /> Crear invitación</> : <><Save size={16} /> Guardar cambios</>}
+                    {modal === "nuevo"
+                      ? <><Send size={16} /> {t("createInvitation")}</>
+                      : <><Save size={16} /> {t("saveChanges")}</>}
                   </button>
                 </div>
               </form>
@@ -413,15 +465,31 @@ export default function Usuarios() {
 
             {modal === "detalle" && usuarioSeleccionado && (
               <div className="user-details">
-                <div className="user-detail-avatar">{usuarioSeleccionado.nombre.charAt(0)}</div>
+                <div className="user-detail-avatar">
+                  {usuarioSeleccionado.nombre.charAt(0)}
+                </div>
                 <h3>{usuarioSeleccionado.nombre}</h3>
                 <p>{usuarioSeleccionado.correo}</p>
-                <div className="detail-row"><span>Rol</span><strong>{usuarioSeleccionado.rol}</strong></div>
-                <div className="detail-row"><span>Sucursal</span><strong>{usuarioSeleccionado.sucursal}</strong></div>
-                <div className="detail-row"><span>Estado</span><strong>{usuarioSeleccionado.estado}</strong></div>
-                <div className="detail-row"><span>Sesiones activas</span><strong>{usuarioSeleccionado.sesiones.length}</strong></div>
+                <div className="detail-row">
+                  <span>{t("role")}</span>
+                  <strong>{usuarioSeleccionado.rol}</strong>
+                </div>
+                <div className="detail-row">
+                  <span>{t("branch")}</span>
+                  <strong>{traducirSucursal(usuarioSeleccionado.sucursal)}</strong>
+                </div>
+                <div className="detail-row">
+                  <span>{t("status")}</span>
+                  <strong>{traducirEstado(usuarioSeleccionado.estado)}</strong>
+                </div>
+                <div className="detail-row">
+                  <span>{t("activeSessions")}</span>
+                  <strong>{usuarioSeleccionado.sesiones.length}</strong>
+                </div>
                 <div className="modal-footer">
-                  <button className="secondary-button" onClick={() => setModal("")}>Cerrar</button>
+                  <button className="secondary-button" onClick={() => setModal("")}>
+                    {t("close")}
+                  </button>
                 </div>
               </div>
             )}
@@ -433,7 +501,7 @@ export default function Usuarios() {
                   <span>{usuarioSeleccionado.correo}</span>
                 </div>
                 {usuarioSeleccionado.sesiones.length === 0 ? (
-                  <div className="empty-state">Este usuario no tiene sesiones activas.</div>
+                  <div className="empty-state">{t("noActiveSessions")}</div>
                 ) : (
                   usuarioSeleccionado.sesiones.map((sesion) => (
                     <div className="session-item" key={sesion.id}>
@@ -442,11 +510,11 @@ export default function Usuarios() {
                       </div>
                       <div className="session-info">
                         <strong>{sesion.dispositivo}</strong>
-                        <span>{sesion.ubicacion}</span>
+                        <span>{traducirSucursal(sesion.ubicacion)}</span>
                       </div>
                       <button
                         className="session-close"
-                        title="Cerrar sesión"
+                        title={t("closeSession")}
                         onClick={() => cerrarSesion(sesion.id)}
                       >
                         <LogOut size={17} />
@@ -455,7 +523,9 @@ export default function Usuarios() {
                   ))
                 )}
                 <div className="modal-footer">
-                  <button className="secondary-button" onClick={() => setModal("")}>Cerrar</button>
+                  <button className="secondary-button" onClick={() => setModal("")}>
+                    {t("close")}
+                  </button>
                 </div>
               </div>
             )}

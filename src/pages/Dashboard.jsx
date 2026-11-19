@@ -1,3 +1,4 @@
+
 import {
   Package,
   FolderTree,
@@ -10,46 +11,47 @@ import {
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
 
 const catalogs = [
   {
-    name: "Categorías",
-    description: "Organiza tus productos por categorías.",
+    nameKey: "categories",
+    descriptionKey: "categoriesDescription",
     icon: FolderTree,
     color: "teal",
     path: "/categorias"
   },
   {
-    name: "Marcas",
-    description: "Administra las marcas de tus productos.",
+    nameKey: "brands",
+    descriptionKey: "brandsDescription",
     icon: Tag,
     color: "blue",
     path: "/marcas"
   },
   {
-    name: "Proveedores",
-    description: "Consulta y organiza tus proveedores.",
+    nameKey: "suppliers",
+    descriptionKey: "suppliersDescription",
     icon: Truck,
     color: "orange",
     path: "/proveedores"
   },
   {
-    name: "Clientes",
-    description: "Gestiona la información de tus clientes.",
+    nameKey: "clients",
+    descriptionKey: "clientsDescription",
     icon: Users,
     color: "purple",
     path: "/clientes"
   },
   {
-    name: "Unidades",
-    description: "Administra unidades de medida.",
+    nameKey: "units",
+    descriptionKey: "unitsDescription",
     icon: Ruler,
     color: "green",
     path: "/unidades"
   },
   {
-    name: "Almacenes",
-    description: "Organiza almacenes y ubicaciones.",
+    nameKey: "warehouses",
+    descriptionKey: "warehousesDescription",
     icon: Warehouse,
     color: "red",
     path: "/almacenes"
@@ -57,15 +59,14 @@ const catalogs = [
 ];
 
 function Dashboard() {
+  const { t } = useTheme();
+
   return (
     <div className="page-content">
       <div className="welcome-section">
         <div>
-          <h1>¡Bienvenido de nuevo!</h1>
-          <p>
-            Administra los catálogos de tu negocio
-            desde un solo lugar.
-          </p>
+          <h1>{t("welcomeBack")}</h1>
+          <p>{t("manageCatalogsIntro")}</p>
         </div>
       </div>
 
@@ -74,43 +75,43 @@ function Dashboard() {
           <div className="stat-icon teal">
             <Package size={22} />
           </div>
-          <span>Total de productos</span>
+          <span>{t("totalProducts")}</span>
           <h2>1,248</h2>
-          <small>Productos registrados</small>
+          <small>{t("productsRegistered")}</small>
         </div>
 
         <div className="stat-card">
           <div className="stat-icon blue">
             <FolderTree size={22} />
           </div>
-          <span>Categorías</span>
+          <span>{t("categories")}</span>
           <h2>18</h2>
-          <small>Categorías registradas</small>
+          <small>{t("categoriesRegistered")}</small>
         </div>
 
         <div className="stat-card">
           <div className="stat-icon orange">
             <Truck size={22} />
           </div>
-          <span>Proveedores</span>
+          <span>{t("suppliers")}</span>
           <h2>32</h2>
-          <small>Proveedores registrados</small>
+          <small>{t("suppliersRegistered")}</small>
         </div>
 
         <div className="stat-card">
           <div className="stat-icon purple">
             <Users size={22} />
           </div>
-          <span>Clientes</span>
+          <span>{t("clients")}</span>
           <h2>156</h2>
-          <small>Clientes registrados</small>
+          <small>{t("clientsRegistered")}</small>
         </div>
       </div>
 
       <div className="section-heading">
         <div>
-          <h2>Catálogos del sistema</h2>
-          <p>Selecciona el catálogo que deseas administrar.</p>
+          <h2>{t("systemCatalogs")}</h2>
+          <p>{t("selectCatalog")}</p>
         </div>
       </div>
 
@@ -122,18 +123,18 @@ function Dashboard() {
             <Link
               to={catalog.path}
               className="catalog-card"
-              key={catalog.name}
+              key={catalog.path}
             >
               <div className={`catalog-icon ${catalog.color}`}>
                 <Icon size={24} />
               </div>
 
-              <h3>{catalog.name}</h3>
+              <h3>{t(catalog.nameKey)}</h3>
 
-              <p>{catalog.description}</p>
+              <p>{t(catalog.descriptionKey)}</p>
 
               <div className="catalog-action">
-                Administrar
+                {t("manage")}
                 <ArrowRight size={16} />
               </div>
             </Link>
