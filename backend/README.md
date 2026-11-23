@@ -206,13 +206,24 @@ npm run test:settings
 ### Configuración y Sucursales (`/api/settings`)
 | Método | Endpoint | Permiso | Descripción |
 |---|---|---|---|
+| `GET` | `/api/settings/onboarding/status` | Público | Verifica si el sistema ya completó el asistente de primer inicio |
+| `POST` | `/api/settings/onboarding` | Público (única vez) | Asistente inicial: crea empresa, matriz, almacén y propietario R0 |
 | `GET` | `/api/settings/company` | `settings.manage` | Datos fiscales de la empresa y límites de aprobación |
 | `PUT` | `/api/settings/company` | `settings.manage` | Modifica datos comerciales y parámetros |
 | `POST` | `/api/settings/company/logo` | `settings.manage` | Carga de logotipo oficial (Multer) |
-| `GET` | `/api/settings/theme` | Autenticado | Tokens de diseño CSS para OmniStock Pulse |
-| `PUT` | `/api/settings/theme` | `settings.manage` | Actualiza variables CSS del tema |
+| `GET` | `/api/settings/theme` | Autenticado | Tokens de diseño CSS para OmniStock Pulse (modo claro/oscuro) |
+| `PUT` | `/api/settings/theme` | `settings.manage` | Actualiza variables CSS y colores semánticos del tema |
+| `GET` | `/api/settings/regional` | Autenticado | Obtiene idioma, moneda, decimales y zona horaria |
+| `PUT` | `/api/settings/regional` | `settings.manage` | Actualiza configuración regional (idiomas y monedas) |
+| `GET` | `/api/settings/notifications` | `settings.manage` | Consulta umbrales de alertas operativas |
+| `PUT` | `/api/settings/notifications` | `settings.manage` | Configura alertas de stock bajo, caducidad FIFO y correos |
+| `GET` | `/api/settings/smtp` | `settings.manage` | Consulta servidor SMTP (enmascara contraseña) |
+| `PUT` | `/api/settings/smtp` | `settings.manage` | Guarda parámetros del servidor SMTP |
+| `POST` | `/api/settings/smtp/test` | `settings.manage` | Envía correo de prueba para validar SMTP |
 | `GET` | `/api/settings/branches` | Autenticado | Lista sucursales |
 | `POST` | `/api/settings/branches` | `locations.manage` | Registra nueva sucursal |
+| `PUT` | `/api/settings/branches/:id` | `locations.manage` | Edita datos o activa/desactiva una sucursal |
 | `GET` | `/api/settings/warehouses` | Autenticado | Lista almacenes (filtrable por `branchId`) |
 | `POST` | `/api/settings/warehouses` | `locations.manage` | Registra nuevo almacén |
+| `PUT` | `/api/settings/warehouses/:id` | `locations.manage` | Edita datos o activa/desactiva un almacén |
 
