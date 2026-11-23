@@ -1,0 +1,6 @@
+/* Utilidades de Tailwind CSS sin Preflight para soportar el Dashboard modular (Frontend 1) sin alterar los estilos base de OmniStock Pulse */
+@import 'tailwindcss/theme.css';
+@import 'tailwindcss/utilities.css';
+
+/* En Tailwind v4 el modo oscuro por clase/atributo se declara explícitamente */
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));

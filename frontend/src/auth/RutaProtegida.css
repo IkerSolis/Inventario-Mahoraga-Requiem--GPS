@@ -1,0 +1,7 @@
+.sin-permiso {
+  max-width: 40rem;
+  padding: 1rem;
+  border-radius: var(--radio-control);
+  background: color-mix(in srgb, var(--color-alerta) 14%, white);
+  color: color-mix(in srgb, var(--color-alerta) 55%, black);
+}

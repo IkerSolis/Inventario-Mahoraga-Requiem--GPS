@@ -1,0 +1,231 @@
+/* Estilos compartidos por las pantallas de Inventario */
+
+.inventario-pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.inventario-pestana {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-bottom: 2px solid transparent;
+  color: var(--color-texto-suave);
+  text-decoration: none;
+}
+
+.inventario-pestana:hover {
+  color: var(--color-texto);
+}
+
+/* NavLink agrega la clase "active" a la pestaña actual */
+.inventario-pestana.active {
+  border-bottom-color: var(--color-primario);
+  color: var(--color-primario);
+  font-weight: 600;
+}
+
+.inventario-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.inventario-filtros > .campo {
+  min-width: 12rem;
+}
+
+.inventario-filtros-busqueda {
+  flex: 1 1 16rem;
+}
+
+.inventario-aviso {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radio-control);
+}
+
+.inventario-aviso-exito {
+  background: color-mix(in srgb, var(--color-optimo) 14%, white);
+  color: color-mix(in srgb, var(--color-optimo) 55%, black);
+}
+
+.inventario-aviso-error {
+  background: color-mix(in srgb, var(--color-critico) 12%, white);
+  color: color-mix(in srgb, var(--color-critico) 60%, black);
+}
+
+.inventario-nota {
+  color: var(--color-texto-suave);
+  font-size: 0.875rem;
+}
+
+.inventario-sku {
+  color: var(--color-texto-suave);
+  font-size: 0.8125rem;
+}
+.inventario-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Chip de filtro: cada tono pinta su punto de color con --tono */
+.inventario-chip {
+  --tono: var(--color-texto-suave);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 999px;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.inventario-chip-optimo::before,
+.inventario-chip-alerta::before,
+.inventario-chip-neutro::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--tono);
+}
+
+.inventario-chip-optimo {
+  --tono: var(--color-optimo);
+}
+
+.inventario-chip-alerta {
+  --tono: var(--color-alerta);
+}
+
+.inventario-chip[aria-pressed='true'] {
+  border-color: var(--color-primario);
+  background: var(--color-primario);
+  color: #fff;
+}
+
+.inventario-chip[aria-pressed='true']::before {
+  background: #fff;
+}
+
+.inventario-encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.inventario-encabezado h2 {
+  margin: 0;
+}
+
+.inventario-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.inventario-chips {
+  margin-bottom: 1rem;
+}
+
+.inventario-sin-corte {
+  white-space: nowrap;
+}
+
+.kardex-resultados {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.kardex-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.kardex-entra {
+  color: color-mix(in srgb, var(--color-optimo) 70%, black);
+}
+
+.kardex-sale {
+  color: color-mix(in srgb, var(--color-critico) 70%, black);
+}
+
+.ajustes {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.ajustes-panel {
+  padding: 1.25rem;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-superficie);
+}
+
+.ajustes-panel h2 {
+  margin: 0 0 1rem;
+}
+
+.ajustes-panel .inventario-encabezado h2 {
+  margin: 0;
+}
+
+.ajustes-panel .inventario-chips {
+  margin: 0;
+}
+
+.ajustes-producto {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  max-width: 32rem;
+}
+
+.ajustes-producto .campo {
+  flex: 1;
+}
+
+.ajustes-elegido {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: color-mix(in srgb, var(--color-optimo) 60%, black);
+}
+
+.ajustes-formulario {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.ajustes-completo {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 720px) {
+  .ajustes-formulario {
+    grid-template-columns: 1fr;
+  }
+}

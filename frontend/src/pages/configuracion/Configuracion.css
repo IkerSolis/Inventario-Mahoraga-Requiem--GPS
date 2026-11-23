@@ -1,0 +1,351 @@
+
+.configuracion-page {
+  padding: 28px;
+  color: var(--text-primary);
+}
+
+.configuracion-header {
+  margin-bottom: 26px;
+}
+
+.configuracion-header h1 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.configuracion-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.configuracion-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.configuracion-navigation,
+.configuracion-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.configuracion-navigation {
+  padding: 18px 12px;
+}
+
+.configuracion-navigation h3 {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 10px 14px;
+  text-transform: uppercase;
+}
+
+.configuracion-nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.configuracion-nav-item:hover {
+  background: var(--background);
+  color: var(--primary);
+}
+
+.configuracion-nav-item.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.configuracion-content {
+  min-width: 0;
+}
+
+.configuracion-section {
+  padding: 24px;
+  margin-bottom: 18px;
+}
+
+.configuracion-section h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.configuracion-description {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0 0 22px;
+}
+
+.configuracion-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.configuracion-option {
+  min-width: 160px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.configuracion-option:hover {
+  border-color: var(--primary);
+}
+
+.configuracion-option.active {
+  border: 2px solid var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.configuracion-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 16px 0 24px;
+}
+
+.configuracion-color {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid var(--surface);
+  outline: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.configuracion-color.active {
+  outline: 3px solid var(--primary);
+}
+
+.configuracion-custom-color {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.configuracion-color-input {
+  width: 48px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.configuracion-reset {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.configuracion-reset:hover {
+  opacity: 0.9;
+}
+
+.configuracion-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 400px;
+  margin-bottom: 18px;
+}
+
+.configuracion-field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.configuracion-field select,
+.configuracion-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.configuracion-field select:focus,
+.configuracion-field input:focus {
+  border-color: var(--primary);
+}
+
+.configuracion-field input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.configuracion-note {
+  margin-top: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.configuracion-notification {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.configuracion-notification:last-child {
+  border-bottom: none;
+}
+
+.configuracion-notification strong {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.configuracion-notification p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.configuracion-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.configuracion-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.configuracion-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 30px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.configuracion-slider::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+
+.configuracion-switch input:checked + .configuracion-slider {
+  background: var(--primary);
+}
+
+.configuracion-switch input:checked + .configuracion-slider::before {
+  transform: translateX(20px);
+}
+
+.configuracion-switch input:focus-visible + .configuracion-slider {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.configuracion-profile-avatar {
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.configuracion-profile-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 20px;
+}
+
+@media (max-width: 850px) {
+  .configuracion-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .configuracion-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .configuracion-navigation h3 {
+    width: 100%;
+  }
+
+  .configuracion-nav-item {
+    width: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .configuracion-page {
+    padding: 16px;
+  }
+
+  .configuracion-section {
+    padding: 18px;
+  }
+
+  .configuracion-profile-form {
+    grid-template-columns: 1fr;
+  }
+
+  .configuracion-nav-item {
+    flex: 1 1 45%;
+  }
+}

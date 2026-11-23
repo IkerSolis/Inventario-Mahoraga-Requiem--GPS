@@ -1,0 +1,24 @@
+/* Puente de variables de Frontend 3 unificado al sistema de diseño OmniStock Pulse (tokens.css) */
+:root {
+  --primary: var(--color-primario);
+  --primary-dark: var(--color-primario-hover);
+  --primary-light: var(--color-primario-suave);
+
+  --background: var(--color-fondo);
+  --surface: var(--color-superficie);
+
+  --text-primary: var(--color-texto);
+  --text-secondary: var(--color-texto-suave);
+  --text-muted: var(--color-manejador);
+
+  --border: var(--color-borde);
+
+  --success: var(--color-optimo);
+  --warning: var(--color-alerta);
+  --danger: var(--color-critico);
+
+  --sidebar-width: 245px;
+  --radius: var(--radio-control);
+
+  font-family: var(--fuente);
+}

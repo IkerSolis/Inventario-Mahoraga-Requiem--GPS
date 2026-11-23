@@ -1,0 +1,63 @@
+.tabla-contenedor {
+  overflow-x: auto;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.tabla th {
+  padding: 0.75rem 1rem;
+  background: var(--color-primario-suave);
+  color: var(--color-texto-suave);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tabla td {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--color-borde);
+  vertical-align: middle;
+}
+
+.tabla-compacta th,
+.tabla-compacta td {
+  padding: 0.375rem 0.75rem;
+}
+
+.tabla tbody tr:hover {
+  background: var(--color-fondo);
+}
+
+.tabla tbody tr.fila-seleccionada {
+  background: var(--color-primario-suave);
+}
+
+.tabla .tabla-derecha {
+  text-align: right;
+}
+
+.tabla .tabla-casilla {
+  width: 1%;
+}
+
+.tabla input[type='checkbox'] {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--color-primario);
+}
+
+.tabla .tabla-vacia {
+  padding: 2rem;
+  color: var(--color-texto-suave);
+  text-align: center;
+}

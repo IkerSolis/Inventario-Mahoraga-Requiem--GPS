@@ -1,0 +1,43 @@
+.producto-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.producto-form-completo {
+  grid-column: 1 / -1;
+}
+
+.producto-form-imagen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.producto-form-imagen .campo {
+  flex: 1 1 16rem;
+}
+
+.producto-form-codigo {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.producto-form-codigo .campo {
+  flex: 1;
+  min-width: 0;
+}
+
+.producto-form-nota {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-texto-suave);
+}
+
+@media (max-width: 720px) {
+  .producto-form {
+    grid-template-columns: 1fr;
+  }
+}

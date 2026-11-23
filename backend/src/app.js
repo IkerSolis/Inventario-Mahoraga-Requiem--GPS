@@ -9,6 +9,10 @@ const usersRoutes = require('./modules/users/users.routes');
 const rolesRoutes = require('./modules/roles/roles.routes');
 const dashboardsRoutes = require('./modules/dashboards/dashboards.routes');
 const settingsRoutes = require('./modules/settings/settings.routes');
+const productsRoutes = require('./modules/products/products.routes');
+const categoriesRoutes = require('./modules/categories/categories.routes');
+const inventoryRoutes = require('./modules/inventory/inventory.routes');
+const reportsRoutes = require('./modules/reports/reports.routes');
 const rolesController = require('./modules/roles/roles.controller');
 const { authenticateToken, requirePermission } = require('./middlewares/authMiddleware');
 const errorHandler = require('./middlewares/errorHandler');
@@ -117,6 +121,10 @@ app.get(
 );
 app.use('/api/dashboards', dashboardsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/products', productsRoutes);
+app.use('/api/categories', categoriesRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // Manejo de ruta no encontrada (404)
 app.use((req, res) => {
